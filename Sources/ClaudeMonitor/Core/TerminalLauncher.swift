@@ -1,25 +1,25 @@
 import AppKit
 
-/// Öffnet den Projektordner im Terminal der Wahl.
+/// Opens the project folder in the terminal of choice.
 ///
-/// Zwei Wege, weil Terminals sich unterschiedlich verhalten: Terminal.app und iTerm nehmen
-/// einen Ordner über Launch Services entgegen, andere — Tabby etwa — melden gar keine
-/// Dokumenttypen an und ignorieren ihn. Für die gibt es einen frei wählbaren Befehl.
+/// Two routes, because terminals differ: Terminal.app and iTerm accept a folder
+/// through Launch Services, while others — Tabby for one — declare no document
+/// types at all and ignore it. Those get a freely chosen command.
 enum TerminalLauncher {
     struct Entry: Identifiable, Hashable, Sendable {
-        let id: String      // Bundle-ID, stabil auch wenn die App umzieht
+        let id: String      // bundle id, stable even when the app moves
         let name: String
         let url: URL
-        /// Ob die App laut ihrem Bundle Ordner entgegennimmt.
+        /// Whether the app accepts folders according to its bundle.
         let acceptsFolders: Bool
     }
 
     static let customID = "custom"
     static let defaultCommand = "open -a Terminal {dir}"
 
-    /// Terminals, die keinen Ordner über Launch Services annehmen, aber ein URL-Schema
-    /// mit einem passenden Kommando mitbringen. Tabby etwa kennt `open [directory]` —
-    /// nachzulesen in seiner Parser-Konfiguration, das Schema registriert es selbst.
+    /// Terminals that take no folder through Launch Services but ship a URL scheme
+    /// with a fitting command. Tabby knows `open [directory]` —
+    /// it sits in its own parser config, and it registers the scheme itself.
     private static let urlSchemes: [String: String] = [
         "org.tabby": "tabby://open?directory={dirurl}"
     ]
@@ -36,7 +36,7 @@ enum TerminalLauncher {
         "co.zeit.hyper"
     ]
 
-    /// Die tatsächlich installierten Terminals, in der Reihenfolge der Kandidatenliste.
+    /// The terminals actually installed, in the order of the candidate list.
     static func installed() -> [Entry] {
         candidates.compactMap { id in
             guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return nil }
@@ -76,7 +76,7 @@ enum TerminalLauncher {
         let bundleID = defaults.string(forKey: "terminalBundleID") ?? "com.apple.Terminal"
 
         guard bundleID == customID else {
-            // Eigenes URL-Kommando schlägt Launch Services: nur so landet der Ordner an.
+            // A dedicated URL command beats Launch Services: only that way does the folder arrive.
             if let template = urlSchemes[bundleID] {
                 let raw = template.replacingOccurrences(of: "{dirurl}", with: urlEncoded(directory.path))
                 guard let url = URL(string: raw) else { throw LaunchError.urlInvalid(raw) }
@@ -108,12 +108,12 @@ enum TerminalLauncher {
         }
     }
 
-    /// Pfade dürfen Leerzeichen und Apostrophe enthalten.
+    /// Paths may contain spaces and apostrophes.
     private static func shellQuoted(_ path: String) -> String {
         "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
-    /// Für den Query-Teil einer Adresse: `&`, `=` und `#` müssen kodiert sein.
+    /// For the query part of a URL: `&`, `=` and `#` have to be encoded.
     private static func urlEncoded(_ path: String) -> String {
         let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&=+?#"))
         return path.addingPercentEncoding(withAllowedCharacters: allowed) ?? path

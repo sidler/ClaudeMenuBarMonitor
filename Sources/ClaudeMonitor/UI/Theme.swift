@@ -5,7 +5,7 @@ enum Theme {
     static let panelWidth: CGFloat = 380
     static let panelMaxHeight: CGFloat = 560
 
-    /// Blau und Orange statt Grün und Rot — unterscheidbar auch bei Rotgrünschwäche.
+    /// Blue and orange instead of green and red — tellable apart with red-green blindness.
     static let working = dynamic(light: "#0A6BD4", dark: "#6FA8F5")
     static let waiting = dynamic(light: "#B35309", dark: "#E8A24A")
     static let aborted = dynamic(light: "#B03A2E", dark: "#E0776A")
@@ -32,7 +32,7 @@ extension NSColor {
     }
 }
 
-/// Der Statuspunkt: gefüllt, Ring oder Kontur — die Farbe trägt die Information nie allein.
+/// The state dot: filled, ring or outline — color never carries the information alone.
 struct StateDot: View {
     let state: SessionState
     var size: CGFloat = 8

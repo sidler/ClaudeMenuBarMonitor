@@ -1,8 +1,8 @@
 import CoreServices
 import Foundation
 
-/// Beobachtet Ordnerbäume über FSEvents — inklusive Änderungen an Dateiinhalten,
-/// die ein reiner Verzeichniswächter nicht meldet.
+/// Watches folder trees through FSEvents — including changes to file contents,
+/// which a plain directory watcher does not report.
 final class FSEventWatcher: @unchecked Sendable {
     private var stream: FSEventStreamRef?
     private let queue = DispatchQueue(label: "local.ClaudeMonitor.fsevents", qos: .utility)

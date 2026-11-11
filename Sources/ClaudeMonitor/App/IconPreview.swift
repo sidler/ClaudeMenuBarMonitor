@@ -1,7 +1,7 @@
 import AppKit
 
-/// `ClaudeMonitor --icon-preview <datei.png>` rendert jedes wählbare Symbol in allen
-/// Zuständen — einmal in echter Menüleistengröße auf dunklem Grund, einmal vergrößert.
+/// `ClaudeMonitor --icon-preview <file.png>` renders every selectable symbol in all
+/// states — once at real menu bar size on a dark strip, once enlarged.
 enum IconPreview {
     private static let states: [SessionState?] = [nil, .working, .awaitingApproval, .awaitingReply, .aborted]
 
@@ -20,7 +20,7 @@ enum IconPreview {
             for (row, choice) in MenuBarIcon.choices.enumerated() {
                 let y = 26 + CGFloat(row) * rowHeight
                 draw(choice.name, at: NSPoint(x: 12, y: y + 6), size: 11, weight: .medium)
-                // Lange Symbolnamen liefen sonst unter die Kacheln.
+                // Long symbol names would otherwise run under the tiles.
                 let id = choice.id.count > 24 ? choice.id.prefix(23) + "…" : choice.id[...]
                 draw(String(id), at: NSPoint(x: 12, y: y + 20), size: 9, color: NSColor(calibratedWhite: 0.5, alpha: 1), monospaced: true)
 
@@ -28,7 +28,7 @@ enum IconPreview {
                     let x = labelWidth + CGFloat(column) * cellWidth
                     let icon = MenuBarIcon.image(for: state, symbol: choice.id)
 
-                    // Dunkler Streifen wie in der Menüleiste.
+                    // A dark strip, like the menu bar.
                     NSColor(calibratedWhite: 0.16, alpha: 1).setFill()
                     NSRect(x: x, y: y, width: cellWidth - 6, height: 34).fill()
 

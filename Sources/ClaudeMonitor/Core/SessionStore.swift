@@ -7,11 +7,11 @@ import SwiftUI
 final class SessionStore {
     private(set) var sessions: [Session] = []
     private(set) var lastScan: Date?
-    /// Taktgeber für die relativen Zeitangaben; ändert sich jede Sekunde.
+    /// Clock for the relative time labels; changes once a second.
     private(set) var now: Date = .now
 
     var config = ScanConfig()
-    /// Welche Zeile das Popover zeigt. Liegt im Store, damit die Views ohne @State auskommen.
+    /// Which row the popover shows. Kept in the store so the views need no @State.
     var selectedID: Session.ID?
 
     private(set) var hookStatus: HookInstaller.Status = .notInstalled
@@ -23,7 +23,7 @@ final class SessionStore {
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var announced: Set<String> = []
 
-    // MARK: - Abgeleitete Zahlen fürs Menüleistensymbol
+    // MARK: - Numbers behind the menu bar symbol
 
     var waiting: [Session] { sessions.filter { $0.state.group == 0 } }
     var working: [Session] { sessions.filter { $0.state == .working } }
@@ -38,7 +38,7 @@ final class SessionStore {
         return parts.isEmpty ? "No active sessions" : parts.joined(separator: " · ")
     }
 
-    /// Was das Symbol in der Menüleiste zeigt.
+    /// What the menu bar symbol shows.
     var headlineState: SessionState? {
         if !waiting.isEmpty { return waiting[0].state }
         if !working.isEmpty { return .working }
@@ -47,7 +47,7 @@ final class SessionStore {
 
     var badgeCount: Int { waiting.isEmpty ? working.count : waiting.count }
 
-    // MARK: - Lebenszyklus
+    // MARK: - Lifecycle
 
     func start() {
         Notifier.prepare()
@@ -69,7 +69,7 @@ final class SessionStore {
         debounce?.cancel()
     }
 
-    /// FSEvents feuert in Schüben — erst sammeln, dann einmal lesen.
+    /// FSEvents fires in bursts — collect first, then read once.
     func scheduleRefresh(delay: Duration = .milliseconds(150)) {
         debounce?.cancel()
         debounce = Task { [weak self] in
@@ -88,7 +88,7 @@ final class SessionStore {
                 guard let self else { return }
                 self.now = .now
                 ticks += 1
-                // Sicherheitsnetz, falls FSEvents einmal nichts meldet.
+                // Safety net in case FSEvents ever stays silent.
                 if ticks % 10 == 0 { self.scheduleRefresh(delay: .zero) }
             }
         }
@@ -106,7 +106,7 @@ final class SessionStore {
         now = .now
     }
 
-    /// Eine Mitteilung je Session und Wartezustand — nicht bei jedem Scan erneut.
+    /// One notification per session and waiting state — not again on every scan.
     private func announceTransitions(to found: [Session]) {
         guard UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true else { return }
         var seen: Set<String> = []
@@ -114,7 +114,7 @@ final class SessionStore {
             let key = "\(session.id)-\(session.state.rawValue)-\(Int(session.stateSince.timeIntervalSince1970))"
             seen.insert(key)
             guard !announced.contains(key) else { continue }
-            // Beim ersten Scan nach dem Start nicht nachträglich alles melden.
+            // Don't announce everything retroactively on the first scan after launch.
             if lastScan != nil { Notifier.announce(session) }
             announced.insert(key)
         }
@@ -146,7 +146,7 @@ final class SessionStore {
         scheduleRefresh(delay: .zero)
     }
 
-    // MARK: - Aktionen
+    // MARK: - Actions
 
     func reveal(_ session: Session) {
         guard let cwd = session.cwd else {
@@ -161,7 +161,7 @@ final class SessionStore {
         openInTerminal(directory: URL(fileURLWithPath: cwd))
     }
 
-    /// Auch aus den Einstellungen heraus für den Testknopf.
+    /// Also used by the Test button in Settings.
     func openInTerminal(directory: URL) {
         do {
             try TerminalLauncher.open(directory: directory)

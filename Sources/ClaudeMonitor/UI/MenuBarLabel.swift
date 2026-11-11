@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// Das Symbol in der Menüleiste: ruhig ohne Punkt, sonst mit Punkt und Anzahl.
+/// The menu bar symbol: no dot when quiet, otherwise dot plus count.
 struct MenuBarLabel: View {
     let state: SessionState?
     let count: Int
 
-    /// Über @AppStorage, damit das Symbol sofort wechselt, wenn es in den
-    /// Einstellungen umgestellt wird.
+    /// Through @AppStorage, so the symbol changes the moment it is switched
+    /// in Settings.
     @AppStorage("menuBarSymbol") private var symbol = MenuBarIcon.defaultSymbol
 
     var body: some View {

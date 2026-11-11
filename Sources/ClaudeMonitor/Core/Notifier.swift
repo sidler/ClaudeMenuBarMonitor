@@ -1,7 +1,7 @@
 import AppKit
 import UserNotifications
 
-/// Mitteilungen — ausschließlich beim Übergang nach „wartet auf dich“.
+/// Notifications — only on the transition into a waiting state.
 @MainActor
 enum Notifier {
     private static var authorized = false

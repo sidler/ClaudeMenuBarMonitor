@@ -1,21 +1,21 @@
 import AppKit
 import SwiftUI
 
-/// Zeichnet das Menüleisten-Symbol als farbiges Bild.
+/// Draws the menu bar symbol as a colored image.
 ///
-/// Ein SwiftUI-Label in `MenuBarExtra` wird von macOS als Template gerendert: die Maske
-/// bleibt, die Farbe fällt weg. Deshalb entsteht das Bild hier von Hand, mit
-/// `isTemplate = false` — nur so ist der Zustandspunkt blau oder orange.
+/// macOS renders a SwiftUI label in `MenuBarExtra` as a template image: the mask
+/// survives, the color does not. So the image is drawn by hand here, with
+/// `isTemplate = false` — only that way is the state dot blue or orange.
 enum MenuBarIcon {
     struct Choice: Identifiable, Hashable, Sendable {
-        let id: String      // Name des SF-Symbols
+        let id: String      // name of the SF Symbol
         let name: String
     }
 
     static let defaultSymbol = "apple.terminal"
 
-    /// Nur Symbole, die bei 16 px noch lesbar sind. Feingliedriges wie `brain` oder `cpu`
-    /// verschmiert in der Menüleiste zu einem Fleck und steht deshalb nicht zur Wahl.
+    /// Only symbols that stay readable at 16 px. Fine detail like `brain` or `cpu`
+    /// smears into a blob in the menu bar and is therefore not offered.
     static let choices: [Choice] = [
         Choice(id: "apple.terminal", name: "Terminal"),
         Choice(id: "terminal", name: "Terminal, plain"),
@@ -39,9 +39,9 @@ enum MenuBarIcon {
         let glyph = tintedGlyph(symbol)
         let dotSize: CGFloat = 8
 
-        // Die Höhe bleibt exakt die des Symbols: ein höheres Bild würde die Menüleiste
-        // mittig ausrichten und das Symbol dadurch nach oben schieben. Der Punkt überlappt
-        // deshalb die untere rechte Ecke und ragt nur seitlich heraus.
+        // The height stays exactly the glyph's: a taller image would be centered by
+        // the menu bar and push the glyph upwards. So the dot overlaps the lower
+        // right corner and sticks out sideways only.
         let size = NSSize(width: glyph.size.width + dotSize / 2, height: glyph.size.height)
 
         let image = NSImage(size: size, flipped: false) { _ in
@@ -55,7 +55,7 @@ enum MenuBarIcon {
             guard let state else { return true }
             let box = NSRect(x: size.width - dotSize, y: 0, width: dotSize, height: dotSize)
 
-            // Loch unter dem Punkt, damit er sich vom Symbol abhebt — auch einfarbig.
+            // A hole under the dot so it stands out from the glyph — monochrome too.
             NSGraphicsContext.saveGraphicsState()
             NSGraphicsContext.current?.compositingOperation = .copy
             NSColor.clear.setFill()
@@ -81,7 +81,7 @@ enum MenuBarIcon {
         return image
     }
 
-    /// Das SF-Symbol ist eine Template-Maske; es bekommt hier die Textfarbe der Menüleiste.
+    /// The SF Symbol is a template mask; here it takes the menu bar's label color.
     private static func tintedGlyph(_ name: String) -> NSImage {
         let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
         let requested = NSImage(systemSymbolName: name, accessibilityDescription: nil)
@@ -100,7 +100,7 @@ enum MenuBarIcon {
 }
 
 extension SessionState {
-    /// Kräftiger als im Panel: in der Menüleiste ist der Punkt nur sechs Pixel groß.
+    /// Stronger than in the panel: in the menu bar the dot is only a few pixels wide.
     var menuBarColor: Color {
         switch self {
         case .awaitingApproval, .awaitingReply: Theme.waiting

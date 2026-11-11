@@ -3,16 +3,16 @@ import Foundation
 struct ScanConfig: Sendable {
     var projectsRoot = FileManager.default.homeDirectoryForCurrentUser
         .appending(path: ".claude/projects", directoryHint: .isDirectory)
-    /// Sessions ohne Aktivität seit dieser Spanne verschwinden aus der Liste.
+    /// Sessions with no activity for this long drop off the list.
     var maxAge: TimeInterval = 24 * 3600
-    /// So lange ohne neue Zeile gilt eine Session noch als arbeitend.
+    /// A session counts as working for this long after its last new line.
     var idleAfter: TimeInterval = 90
     var contextLimit = 200_000
 }
 
-/// Liest alle jungen Transkripte und leitet daraus den Zustand jeder Session ab.
+/// Reads every recent transcript and derives each session's state from it.
 ///
-/// Läuft bewusst außerhalb des Main-Actors: der Scan fasst Dateien an.
+/// Deliberately off the main actor: the scan touches files.
 enum SessionScanner {
     static func scan(_ config: ScanConfig, now: Date = .now) -> [Session] {
         let fm = FileManager.default
@@ -60,7 +60,7 @@ enum SessionScanner {
         return sessions.sorted(by: order)
     }
 
-    /// Wartet → arbeitet → ruht; innerhalb der Gruppe die jüngste Änderung zuerst.
+    /// Waiting → working → idle; newest change first within each group.
     static func order(_ a: Session, _ b: Session) -> Bool {
         if a.state.group != b.state.group { return a.state.group < b.state.group }
         if a.state != b.state { return a.state < b.state }
@@ -84,7 +84,7 @@ enum SessionScanner {
         var headline = digest.headline ?? state.title
         var detail = digest.detail
 
-        // Der Hook weiß mehr als die Datei — aber nur, solange nichts Jüngeres passiert ist.
+        // The hook knows more than the file — but only while nothing newer has happened.
         if let hook, hook.at >= activity.addingTimeInterval(-2) {
             since = hook.at
             switch hook.kind {
@@ -99,8 +99,8 @@ enum SessionScanner {
                     detail = digest.detail ?? hook.message
                 }
             case .preToolUse, .postToolUse, .userPromptSubmit, .sessionStart:
-                // Ein Arbeits-Signal gilt nur, solange es frisch ist. Sonst stünde eine
-                // Session, die startet und dann liegen bleibt, dauerhaft auf „arbeitet“.
+                // A work signal only counts while it is fresh. Otherwise a session that
+                // starts and then goes quiet would sit on “working” forever.
                 if now.timeIntervalSince(hook.at) < config.idleAfter {
                     state = .working
                     headline = hook.toolSummary ?? headline

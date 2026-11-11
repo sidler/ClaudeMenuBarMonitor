@@ -10,7 +10,7 @@ enum Fmt {
         return try? isoPlain.parse(s)
     }
 
-    /// Epoch-Millisekunden, die Claude als String ablegt.
+    /// Epoch milliseconds, which Claude stores as a string.
     static func epochMillis(_ raw: Any?) -> Date? {
         let ms: Double? = switch raw {
         case let d as Double: d
@@ -40,7 +40,7 @@ enum Fmt {
         }
     }
 
-    /// „0:42“, „18 min“, „1 h 12“ — kurz genug für eine Zeile im Panel.
+    /// “0:42”, “18 min”, “1 h 12” — short enough for a single line in the panel.
     static func elapsed(since date: Date, now: Date = .now) -> String {
         let s = max(0, Int(now.timeIntervalSince(date)))
         if s < 60 { return "0:\(String(format: "%02d", s))" }
@@ -63,7 +63,7 @@ enum Fmt {
         value >= 1000 ? "\(value / 1000)k" : "\(value)"
     }
 
-    /// „claude-opus-5-5“ → „Opus 5.5“
+    /// “claude-opus-5-5” → “Opus 5.5”
     static func modelName(_ raw: String?) -> String? {
         guard let raw, !raw.isEmpty else { return nil }
         var parts = raw.split(separator: "-").map(String.init)

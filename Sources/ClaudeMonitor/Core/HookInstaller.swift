@@ -1,12 +1,12 @@
 import Foundation
 
-/// Trägt die Hook-Brücke in `~/.claude/settings.json` ein — und wieder aus.
+/// Registers the hook bridge in `~/.claude/settings.json` — and removes it again.
 ///
-/// Das Skript selbst legt die App unter `~/.claude/monitor/hook.sh` ab, nicht im
-/// App-Bundle: der eingetragene Pfad muss gültig bleiben, auch wenn die App
-/// verschoben, ersetzt oder aus dem Papierkorb wiederhergestellt wird.
+/// The app writes the script itself to `~/.claude/monitor/hook.sh`, not into the
+/// app bundle: the registered path has to stay valid even when the app is
+/// moved, replaced or restored from the trash.
 enum HookInstaller {
-    /// Ereignisse, aus denen sich die Zustände ableiten.
+    /// The events the states are derived from.
     static let events = [
         "Notification",     // waiting for approval / for a reply
         "PreToolUse",       // working
@@ -51,19 +51,19 @@ enum HookInstaller {
         }
     }
 
-    // MARK: - Orte
+    // MARK: - Locations
 
     private static var home: URL { FileManager.default.homeDirectoryForCurrentUser }
     static var settingsURL: URL { home.appending(path: ".claude/settings.json") }
     static var scriptURL: URL { home.appending(path: ".claude/monitor/hook.sh") }
     static var backupURL: URL { home.appending(path: ".claude/settings.json.bak") }
 
-    /// Bewusst ohne jq oder Python: der Hook läuft bei jedem Werkzeugaufruf.
+    /// Deliberately without jq or Python: the hook runs on every tool call.
     private static let script = """
     #!/bin/sh
-    # Claude Monitor — Hook-Brücke.
-    # Legt das von Claude Code über stdin gereichte JSON im Spool-Ordner ab.
-    # Die App liest die Dateien und räumt sie weg.
+    # Claude Monitor — hook bridge.
+    # Drops the JSON that Claude Code hands the hook on stdin into the spool folder.
+    # The app reads those files and clears them out.
     set -eu
 
     dir="${HOME}/.claude/monitor/events"
@@ -100,7 +100,7 @@ enum HookInstaller {
         }
     }
 
-    // MARK: - Eintragen und entfernen
+    // MARK: - Install and remove
 
     static func install() throws {
         try writeScript()
@@ -109,7 +109,7 @@ enum HookInstaller {
 
         for event in events {
             var matchers = hooks[event] as? [[String: Any]] ?? []
-            // Ein leerer Matcher greift für alle Werkzeuge; vorhandene Einträge bleiben stehen.
+            // An empty matcher applies to every tool; existing entries are left alone.
             let index = matchers.firstIndex { ($0["matcher"] as? String ?? "").isEmpty } ?? {
                 matchers.append(["matcher": "", "hooks": [[String: Any]]()])
                 return matchers.count - 1
@@ -137,7 +137,7 @@ enum HookInstaller {
                     .filter { $0["command"] as? String != scriptURL.path }
                 matchers[index]["hooks"] = commands
             }
-            // Leere Hüllen aufräumen, aber fremde Einträge unangetastet lassen.
+            // Clean up empty shells, but leave other people's entries untouched.
             matchers.removeAll { ($0["hooks"] as? [[String: Any]] ?? []).isEmpty }
             if matchers.isEmpty { hooks.removeValue(forKey: event) } else { hooks[event] = matchers }
         }
@@ -147,7 +147,7 @@ enum HookInstaller {
         try? FileManager.default.removeItem(at: scriptURL)
     }
 
-    // MARK: - Dateien
+    // MARK: - Files
 
     private static func writeScript() throws {
         let fm = FileManager.default
@@ -174,7 +174,7 @@ enum HookInstaller {
 
     private static func writeSettings(_ settings: [String: Any]) throws {
         do {
-            // Sicherung vor der ersten Änderung — die Datei gehört dem Menschen, nicht uns.
+            // Back up before the first change — the file belongs to the user, not to us.
             if FileManager.default.fileExists(atPath: settingsURL.path) {
                 try? FileManager.default.removeItem(at: backupURL)
                 try FileManager.default.copyItem(at: settingsURL, to: backupURL)

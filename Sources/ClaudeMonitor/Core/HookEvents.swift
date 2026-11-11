@@ -1,9 +1,9 @@
 import Foundation
 
-/// Ein vom Hook-Skript abgelegtes Ereignis.
+/// An event dropped by the hook script.
 ///
-/// Claude Code reicht Hooks ein JSON-Objekt über stdin; das Skript legt es unverändert
-/// in einem Spool-Ordner ab. Dadurch braucht der Hook weder `jq` noch Python.
+/// Claude Code hands hooks a JSON object on stdin; the script stores it unchanged
+/// in a spool folder. That way the hook needs neither `jq` nor Python.
 struct HookEvent: Sendable {
     enum Kind: String, Sendable {
         case notification = "Notification"
@@ -25,7 +25,7 @@ struct HookEvent: Sendable {
     let message: String?
     let cwd: String?
 
-    /// Unterscheidet „Claude braucht eine Freigabe“ von „Claude wartet auf deine Antwort“.
+    /// Tells “Claude needs permission” apart from “Claude is waiting for your input”.
     var isPermissionRequest: Bool {
         guard kind == .notification else { return false }
         let text = (message ?? "").lowercased()
@@ -38,7 +38,7 @@ enum HookSpool {
     static let directory = FileManager.default.homeDirectoryForCurrentUser
         .appending(path: ".claude/monitor/events", directoryHint: .isDirectory)
 
-    /// Jüngstes Ereignis je Session. Ältere Dateien werden dabei gleich weggeräumt.
+    /// Newest event per session. Older files are cleared out along the way.
     static func latestBySession(maxAge: TimeInterval) -> [String: HookEvent] {
         let fm = FileManager.default
         guard let entries = try? fm.contentsOfDirectory(
@@ -59,7 +59,7 @@ enum HookSpool {
                 continue
             }
             guard let event = parse(url, modified: modified) else {
-                // Unlesbar oder fremdes Format: nach einer Stunde weg.
+                // Unreadable or foreign format: gone after an hour.
                 if modified < Date.now.addingTimeInterval(-3600) { try? fm.removeItem(at: url) }
                 continue
             }
@@ -72,8 +72,8 @@ enum HookSpool {
             keep[event.sessionId] = url
         }
 
-        // Pro Session zählt nur das jüngste Ereignis — der Rest ist verbraucht.
-        // Ohne das wächst der Spool um eine Datei je Werkzeugaufruf.
+        // Only the newest event per session counts — the rest is spent.
+        // Without this the spool grows by one file per tool call.
         for url in superseded { try? fm.removeItem(at: url) }
 
         return latest

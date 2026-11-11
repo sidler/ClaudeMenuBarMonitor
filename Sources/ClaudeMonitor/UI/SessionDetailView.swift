@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Das Popover: kurz, prägnant, immer am aktuellen Stand der Session.
+/// The popover: short, pointed, always on the session's current state.
 struct SessionDetailView: View {
     let store: SessionStore
     let sessionID: Session.ID

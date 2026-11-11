@@ -38,11 +38,11 @@ struct PanelView: View {
         .frame(width: Theme.panelWidth)
     }
 
-    // MARK: - Höhe
+    // MARK: - Height
 
-    /// Eine ScrollView hat keine Eigenhöhe. In einem Fenster, das sich auf seinen Inhalt
-    /// zusammenzieht, fiele sie auf null zusammen — also die Höhe selbst ausrechnen und
-    /// bei `panelMaxHeight` kappen, ab dann wird gescrollt.
+    /// A ScrollView has no intrinsic height. In a window that shrinks to fit its
+    /// content it would collapse to zero — so compute the height here and cap it
+    /// at `panelMaxHeight`; beyond that it scrolls.
     private var listHeight: CGFloat {
         let rowHeight: CGFloat = 48
         let groupHeader: CGFloat = 26
@@ -51,7 +51,7 @@ struct PanelView: View {
         return min(content, Theme.panelMaxHeight)
     }
 
-    // MARK: - Teile
+    // MARK: - Parts
 
     private var header: some View {
         HStack(alignment: .top) {
@@ -96,8 +96,8 @@ struct PanelView: View {
                 ) {
                     store.selectedID = store.selectedID == session.id ? nil : session.id
                 }
-                // Der Modifier gehört an die Zeile: am Gesamtfenster angebracht,
-                // klappte das Popover unten am Panel auf statt neben dem Eintrag.
+                // The modifier belongs on the row: attached to the whole window,
+                // the popover opened at the bottom of the panel instead of next to the entry.
                 .popover(
                     isPresented: presented(session.id),
                     attachmentAnchor: .rect(.bounds),

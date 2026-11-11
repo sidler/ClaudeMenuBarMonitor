@@ -1,19 +1,19 @@
 import SwiftUI
 
-/// Die fünf Zustände aus dem Entwurf. Reihenfolge der Cases = Sortierreihenfolge.
+/// The five states from the design. Case order = sort order.
 enum SessionState: String, Sendable, CaseIterable, Comparable {
-    /// Eine Berechtigungsabfrage steht offen (Bash, Edit, MCP-Tool).
+    /// A permission prompt is pending (Bash, Edit, MCP tool).
     case awaitingApproval
-    /// Der Turn ist beendet und endet mit einer Rückfrage an den Menschen.
+    /// The turn has finished and ends with a question for the user.
     case awaitingReply
-    /// Claude führt gerade einen Turn aus.
+    /// Claude is running a turn.
     case working
-    /// Turn gestoppt, API-Fehler oder Prozess weg.
+    /// Turn stopped, API error, or the process is gone.
     case aborted
-    /// Antwort liegt vor, nichts ist offen.
+    /// An answer is in, nothing is pending.
     case idle
 
-    /// 0 = wartet auf dich, 1 = arbeitet, 2 = ruht.
+    /// 0 = waiting for you, 1 = working, 2 = idle.
     var group: Int {
         switch self {
         case .awaitingApproval, .awaitingReply: 0
@@ -40,7 +40,7 @@ enum SessionState: String, Sendable, CaseIterable, Comparable {
         }
     }
 
-    /// Verlangt Aufmerksamkeit: färbt das Menüleistensymbol und löst eine Mitteilung aus.
+    /// Needs attention: colors the menu bar symbol and fires a notification.
     var needsAttention: Bool { group == 0 }
 
     var tint: Color {
@@ -52,7 +52,7 @@ enum SessionState: String, Sendable, CaseIterable, Comparable {
         }
     }
 
-    /// Form des Punkts — damit Farbe nie das einzige Unterscheidungsmerkmal ist.
+    /// Shape of the dot — so color is never the only distinguishing mark.
     enum DotStyle { case filled, ring, hollow }
 
     var dotStyle: DotStyle {

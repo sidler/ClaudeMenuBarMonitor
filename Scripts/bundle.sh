@@ -1,5 +1,5 @@
 #!/bin/sh
-# Baut ClaudeMonitor.app. Aufruf: Scripts/bundle.sh [debug|release]
+# Builds ClaudeMonitor.app. Usage: Scripts/bundle.sh [debug|release]
 set -eu
 
 config="${1:-release}"
@@ -15,8 +15,8 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin/ClaudeMonitor" "$app/Contents/MacOS/ClaudeMonitor"
 cp "$root/Resources/Info.plist" "$app/Contents/Info.plist"
 
-# Ad-hoc-Signatur: reicht lokal, auch für Mitteilungen und Login-Item.
+# Ad-hoc signature: enough locally, including notifications and the login item.
 codesign --force --sign - "$app" >/dev/null
 
-echo "Fertig: $app"
-echo "Starten mit: open \"$app\""
+echo "Done: $app"
+echo "Run with: open \"$app\""

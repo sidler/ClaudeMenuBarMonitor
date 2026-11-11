@@ -1,6 +1,6 @@
 import Foundation
 
-/// Ein Eintrag im Verlauf einer Session.
+/// One entry in a session's history.
 struct ActivityItem: Identifiable, Sendable, Hashable {
     enum Kind: Sendable, Hashable { case prompt, tool, answer, notice }
 
@@ -10,13 +10,13 @@ struct ActivityItem: Identifiable, Sendable, Hashable {
     let text: String
 }
 
-/// Der Zustand einer Session, so wie ihn das Panel zeigt.
+/// A session's state as the panel shows it.
 struct Session: Identifiable, Sendable, Hashable {
     let id: String                 // sessionId
     let transcript: URL
     let projectSlug: String
 
-    var title: String              // customTitle oder Projektordner
+    var title: String              // customTitle, or the project folder
     var cwd: String?
     var gitBranch: String?
     var model: String?
@@ -26,9 +26,9 @@ struct Session: Identifiable, Sendable, Hashable {
     var stateSince: Date
     var lastActivity: Date
 
-    /// Einzeiler unter dem Namen: „Bash · composer update“.
+    /// One-liner under the name: “Bash · composer update”.
     var headline: String
-    /// Längerer Text fürs Popover: Kommando oder Rückfrage im Wortlaut.
+    /// Longer text for the popover: the command or question verbatim.
     var detail: String?
 
     var startedAt: Date?
@@ -56,8 +56,8 @@ struct Session: Identifiable, Sendable, Hashable {
 extension String {
     var nonEmpty: String? { isEmpty ? nil : self }
 
-    /// Macht aus Markdown eine Zeile Fließtext: Links werden zu ihrem Linktext,
-    /// Auszeichnungen und Überschriften fallen weg.
+    /// Flattens Markdown into one line of prose: links become their link text,
+    /// emphasis and headings fall away.
     var flattenedMarkdown: String {
         var text = self
         if let links = try? Regex(#"\[([^\]]+)\]\([^)]+\)"#) {
@@ -73,7 +73,7 @@ extension String {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Kürzt auf `limit` Zeichen, bricht dabei nicht mitten im Wort ab.
+    /// Truncates to `limit` characters without cutting a word in half.
     func truncated(to limit: Int) -> String {
         let flat = replacingOccurrences(of: "\n", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)

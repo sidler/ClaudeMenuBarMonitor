@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Einstiegspunkt. `--scan` gibt den erkannten Zustand auf der Konsole aus und beendet sich.
+/// Entry point. `--scan` prints the detected state to the console and exits.
 @main
 enum Entry {
     static func main() {
@@ -52,7 +52,7 @@ struct ClaudeMonitorApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Kein Dock-Symbol, kein Fenster beim Start — die App lebt in der Menüleiste.
+        // No Dock icon, no window at launch — the app lives in the menu bar.
         NSApp.setActivationPolicy(.accessory)
         SessionStore.shared.start()
     }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Was sich aus dem Ende einer Transkriptdatei ablesen lässt.
+/// What can be read from the end of a transcript file.
 struct TranscriptDigest: Sendable {
     enum Kind: Sendable { case userPrompt, toolUse, toolResult, assistantText, thinking, other }
 
@@ -27,10 +27,10 @@ struct TranscriptDigest: Sendable {
     var recent: [ActivityItem] = []
 }
 
-/// Liest das Ende einer `.jsonl`-Datei und leitet daraus ab, was die Session gerade tut.
+/// Reads the end of a `.jsonl` file and derives what the session is doing.
 ///
-/// Gelesen wird nur der Schwanz der Datei — die Transkripte werden mehrere Megabyte groß,
-/// und alles, was das Panel zeigt, steht in den letzten Einträgen.
+/// Only the tail is read — transcripts grow to several megabytes,
+/// and everything the panel shows lives in the last entries.
 enum TranscriptParser {
     static let tailBytes = 512 * 1024
     static let recentLimit = 8
@@ -46,7 +46,7 @@ enum TranscriptParser {
                   let type = obj["type"] as? String
             else { continue }
 
-            // Felder, die in vielen Eintragsarten stehen — immer den jüngsten Wert behalten.
+            // Fields that appear in many entry kinds — always keep the newest value.
             if let v = obj["cwd"] as? String { d.cwd = v }
             if let v = obj["gitBranch"] as? String, !v.isEmpty { d.gitBranch = v }
 
@@ -138,8 +138,8 @@ enum TranscriptParser {
         return texts.joined(separator: " ").nonEmpty
     }
 
-    /// Belegung des Kontextfensters: alles, was beim letzten Aufruf im Prompt stand.
-    /// Die Ausgabe zählt nicht mit — sie steht erst im nächsten Aufruf im Kontext.
+    /// Context window usage: everything that was in the prompt on the last call.
+    /// The output does not count — it only enters the context on the next call.
     private static func contextSize(_ usage: [String: Any]) -> Int? {
         let input = Fmt.int(usage["input_tokens"]) ?? 0
         let cacheRead = Fmt.int(usage["cache_read_input_tokens"]) ?? 0
@@ -148,7 +148,7 @@ enum TranscriptParser {
         return total > 0 ? total : nil
     }
 
-    /// „Bash · composer update“ für die Liste, der volle Befehl fürs Popover.
+    /// “Bash · composer update” for the list, the full command for the popover.
     static func toolSummary(_ block: [String: Any]) -> (short: String, long: String?) {
         let name = (block["name"] as? String) ?? "Tool"
         let input = (block["input"] as? [String: Any]) ?? [:]
@@ -175,7 +175,7 @@ enum TranscriptParser {
         return ("\(display) · \(detail.truncated(to: 48))", detail.truncated(to: 300))
     }
 
-    /// Letzte `tailBytes` der Datei, ohne die angeschnittene erste Zeile.
+    /// The last `tailBytes` of the file, without the partial first line.
     private static func tailLines(of url: URL) -> [String]? {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
