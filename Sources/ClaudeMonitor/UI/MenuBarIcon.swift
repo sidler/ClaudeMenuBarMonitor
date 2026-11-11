@@ -18,17 +18,17 @@ enum MenuBarIcon {
     /// verschmiert in der Menüleiste zu einem Fleck und steht deshalb nicht zur Wahl.
     static let choices: [Choice] = [
         Choice(id: "apple.terminal", name: "Terminal"),
-        Choice(id: "terminal", name: "Terminal, schlicht"),
-        Choice(id: "waveform", name: "Aktivität"),
-        Choice(id: "waveform.path", name: "Puls"),
-        Choice(id: "rectangle.stack", name: "Stapel"),
-        Choice(id: "list.bullet.rectangle", name: "Liste"),
-        Choice(id: "asterisk", name: "Stern"),
-        Choice(id: "sparkle", name: "Funke"),
+        Choice(id: "terminal", name: "Terminal, plain"),
+        Choice(id: "waveform", name: "Activity"),
+        Choice(id: "waveform.path", name: "Pulse"),
+        Choice(id: "rectangle.stack", name: "Stack"),
+        Choice(id: "list.bullet.rectangle", name: "List"),
+        Choice(id: "asterisk", name: "Asterisk"),
+        Choice(id: "sparkle", name: "Sparkle"),
         Choice(id: "staroflife", name: "Burst"),
         Choice(id: "chevron.left.forwardslash.chevron.right", name: "Code"),
-        Choice(id: "square.grid.2x2", name: "Raster"),
-        Choice(id: "point.3.connected.trianglepath.dotted", name: "Agenten")
+        Choice(id: "square.grid.2x2", name: "Grid"),
+        Choice(id: "point.3.connected.trianglepath.dotted", name: "Agents")
     ]
 
     static var currentSymbol: String {
@@ -77,7 +77,7 @@ enum MenuBarIcon {
         }
 
         image.isTemplate = false
-        image.accessibilityDescription = state?.title ?? "Keine aktive Session"
+        image.accessibilityDescription = state?.title ?? "No active session"
         return image
     }
 

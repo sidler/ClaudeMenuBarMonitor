@@ -53,19 +53,19 @@ enum IconPreview {
               let bitmap = NSBitmapImageRep(data: tiff),
               let png = bitmap.representation(using: .png, properties: [:])
         else {
-            print("Rendern fehlgeschlagen")
+            print("Rendering failed")
             return
         }
         do {
             try png.write(to: URL(fileURLWithPath: path))
-            print("Geschrieben: \(path)")
+            print("Written: \(path)")
         } catch {
-            print("Schreiben fehlgeschlagen: \(error.localizedDescription)")
+            print("Write failed: \(error.localizedDescription)")
         }
     }
 
     private static func header(labelWidth: CGFloat, cellWidth: CGFloat) {
-        let titles = ["ruhig", "arbeitet", "Freigabe", "Rückfrage", "Abbruch"]
+        let titles = ["quiet", "working", "approval", "question", "aborted"]
         for (column, title) in titles.enumerated() {
             draw(title, at: NSPoint(x: labelWidth + CGFloat(column) * cellWidth + 4, y: 8), size: 9,
                  color: NSColor(calibratedWhite: 0.45, alpha: 1))

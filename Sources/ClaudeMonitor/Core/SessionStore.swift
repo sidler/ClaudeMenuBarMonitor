@@ -31,11 +31,11 @@ final class SessionStore {
 
     var summary: String {
         let parts = [
-            working.isEmpty ? nil : "\(working.count) \(working.count == 1 ? "arbeitet" : "arbeiten")",
-            waiting.isEmpty ? nil : "\(waiting.count) \(waiting.count == 1 ? "wartet" : "warten")",
-            resting.isEmpty ? nil : "\(resting.count) \(resting.count == 1 ? "ruht" : "ruhen")"
+            working.isEmpty ? nil : "\(working.count) working",
+            waiting.isEmpty ? nil : "\(waiting.count) waiting",
+            resting.isEmpty ? nil : "\(resting.count) idle"
         ].compactMap { $0 }
-        return parts.isEmpty ? "Keine aktiven Sessions" : parts.joined(separator: " · ")
+        return parts.isEmpty ? "No active sessions" : parts.joined(separator: " · ")
     }
 
     /// Was das Symbol in der Menüleiste zeigt.

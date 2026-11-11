@@ -57,7 +57,7 @@ struct SessionRow: View {
                 .background(Capsule().fill(session.state.tint.opacity(0.16)))
                 .foregroundStyle(session.state.tint)
         case .aborted:
-            Text("Abgebrochen")
+            Text("Aborted")
                 .font(.system(size: 10, weight: .semibold))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
@@ -72,6 +72,6 @@ struct SessionRow: View {
     }
 
     private var badgeWord: String {
-        session.state == .awaitingApproval ? "Freigabe" : "Rückfrage"
+        session.state == .awaitingApproval ? "Approval" : "Question"
     }
 }

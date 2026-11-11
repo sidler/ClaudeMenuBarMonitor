@@ -8,11 +8,11 @@ import Foundation
 enum HookInstaller {
     /// Ereignisse, aus denen sich die Zustände ableiten.
     static let events = [
-        "Notification",     // wartet auf Freigabe / auf Antwort
-        "PreToolUse",       // arbeitet
-        "PostToolUse",      // arbeitet
-        "UserPromptSubmit", // arbeitet
-        "Stop",             // ruht
+        "Notification",     // waiting for approval / for a reply
+        "PreToolUse",       // working
+        "PostToolUse",      // working
+        "UserPromptSubmit", // working
+        "Stop",             // idle
         "SessionStart",
         "SessionEnd"
     ]
@@ -28,13 +28,13 @@ enum HookInstaller {
         var text: String {
             switch self {
             case .installed:
-                "Eingetragen für alle \(events.count) Ereignisse"
+                "Installed for all \(events.count) events"
             case let .partial(missing):
-                "Teilweise eingetragen — es fehlen: \(missing.joined(separator: ", "))"
+                "Partially installed — missing: \(missing.joined(separator: ", "))"
             case .notInstalled:
-                "Nicht eingetragen — Wartezustände werden bis dahin nur geschätzt"
+                "Not installed — waiting states are guessed until then"
             case let .unreadable(reason):
-                "Einstellungen nicht lesbar: \(reason)"
+                "Settings unreadable: \(reason)"
             }
         }
     }
@@ -45,8 +45,8 @@ enum HookInstaller {
 
         var errorDescription: String? {
             switch self {
-            case let .settingsUnreadable(reason): "settings.json konnte nicht gelesen werden: \(reason)"
-            case let .settingsNotWritable(reason): "settings.json konnte nicht geschrieben werden: \(reason)"
+            case let .settingsUnreadable(reason): "Could not read settings.json: \(reason)"
+            case let .settingsNotWritable(reason): "Could not write settings.json: \(reason)"
             }
         }
     }
@@ -162,7 +162,7 @@ enum HookInstaller {
             let data = try Data(contentsOf: settingsURL)
             guard !data.isEmpty else { return [:] }
             guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                throw InstallError.settingsUnreadable("kein JSON-Objekt")
+                throw InstallError.settingsUnreadable("not a JSON object")
             }
             return object
         } catch let error as InstallError {

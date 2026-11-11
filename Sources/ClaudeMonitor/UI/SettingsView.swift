@@ -17,13 +17,13 @@ struct SettingsView: View {
             terminalSection
 
             Section {
-                Toggle("Mitteilung, wenn eine Session auf dich wartet", isOn: $notificationsEnabled)
-                Toggle("Bei der Anmeldung starten", isOn: $launchAtLogin)
+                Toggle("Notify me when a session needs me", isOn: $notificationsEnabled)
+                Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, enabled in
                         setLaunchAtLogin(enabled)
                     }
             } footer: {
-                Text("Mitteilungen kommen nur beim Übergang nach „wartet auf dich“ — nie während des Arbeitens.")
+                Text("Notifications fire only on the transition into a waiting state — never while a session works.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -48,12 +48,12 @@ struct SettingsView: View {
                 }
             }
 
-            // Alle Zustände nebeneinander, damit die Wahl mit Punkt beurteilbar ist.
+            // Every state side by side — the dot suits some glyphs and crowds others.
             HStack(spacing: 14) {
                 ForEach(previewStates, id: \.self) { state in
                     VStack(spacing: 4) {
                         Image(nsImage: MenuBarIcon.image(for: state, symbol: menuBarSymbol))
-                        Text(state?.title ?? "Ruhig")
+                        Text(state?.title ?? "Quiet")
                             .font(.system(size: 9))
                             .foregroundStyle(.secondary)
                     }
@@ -62,9 +62,9 @@ struct SettingsView: View {
             }
             .padding(.vertical, 2)
         } header: {
-            Text("Menüleiste")
+            Text("Menu bar")
         } footer: {
-            Text("Feingliedrige Symbole fehlen in der Liste — sie verschmieren bei 16 Pixeln zu einem Fleck.")
+            Text("Finely detailed symbols are left out — at 16 pixels they smear into a blob.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -82,11 +82,11 @@ struct SettingsView: View {
                 ForEach(TerminalLauncher.installed()) { terminal in
                     Text(terminal.name).tag(terminal.id)
                 }
-                Text("Eigener Befehl …").tag(TerminalLauncher.customID)
+                Text("Custom command …").tag(TerminalLauncher.customID)
             }
 
             if terminalBundleID == TerminalLauncher.customID {
-                TextField("Befehl", text: $terminalCommand, prompt: Text(TerminalLauncher.defaultCommand))
+                TextField("Command", text: $terminalCommand, prompt: Text(TerminalLauncher.defaultCommand))
                     .font(.system(size: 12, design: .monospaced))
                     .textFieldStyle(.roundedBorder)
             }
@@ -104,27 +104,27 @@ struct SettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                Button("Testen") { store.openInTerminal(directory: testDirectory) }
+                Button("Test") { store.openInTerminal(directory: testDirectory) }
                     .buttonStyle(.glass)
             }
         } header: {
             Text("Terminal")
         } footer: {
             Text(terminalBundleID == TerminalLauncher.customID
-                 ? "{dir} wird durch den Projektordner ersetzt, bereits in Anführungszeichen."
-                 : "Wird für „Im Terminal öffnen“ im Popover benutzt.")
+                 ? "{dir} is replaced with the project folder, already shell-quoted. {dirurl} gives the percent-encoded path."
+                 : "Used by “Open in terminal” in the popover.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
     }
 
-    /// Nicht jedes Terminal nimmt einen Ordner über Launch Services entgegen.
+    /// Not every terminal accepts a folder through Launch Services.
     private var folderWarning: String? {
         guard terminalBundleID != TerminalLauncher.customID,
               let terminal = TerminalLauncher.installed().first(where: { $0.id == terminalBundleID }),
               !terminal.acceptsFolders
         else { return nil }
-        return "\(terminal.name) nimmt laut seinem Bundle keine Ordner entgegen — es startet, wechselt aber nicht in den Projektordner. Dafür „Eigener Befehl“ nehmen."
+        return "\(terminal.name) declares no folder support — it will launch but stay in its previous directory. Use a custom command instead."
     }
 
     private var testDirectory: URL {
@@ -157,10 +157,10 @@ struct SettingsView: View {
                 Spacer(minLength: 8)
 
                 if store.hookStatus.isComplete {
-                    Button("Entfernen") { store.uninstallHooks() }
+                    Button("Remove") { store.uninstallHooks() }
                         .buttonStyle(.glass)
                 } else {
-                    Button("Hooks eintragen") { store.installHooks() }
+                    Button("Install hooks") { store.installHooks() }
                         .buttonStyle(.glassProminent)
                 }
             }
@@ -170,14 +170,14 @@ struct SettingsView: View {
         } footer: {
             VStack(alignment: .leading, spacing: 4) {
                 Text("""
-                Ohne Hooks liest die App nur die Transkripte. „Arbeitet“ erkennt sie damit \
-                zuverlässig, „wartet auf Freigabe“ aber nur geschätzt: eine hängende \
-                Berechtigungsabfrage sieht im Transkript aus wie ein langer Werkzeugaufruf.
+                Without hooks the app only reads transcripts. It detects “working” reliably that \
+                way, but “needs approval” is a guess: a pending permission prompt looks exactly \
+                like a long-running tool call.
                 """)
                 Text("""
-                Eingetragen wird ein Skript unter ~/.claude/monitor/hook.sh für \
-                \(HookInstaller.events.joined(separator: ", ")). Vorhandene Hooks bleiben \
-                stehen, von settings.json wird vorher eine Sicherung angelegt.
+                Installing writes a script to ~/.claude/monitor/hook.sh and registers it for \
+                \(HookInstaller.events.joined(separator: ", ")). Existing hooks stay, and \
+                settings.json is backed up first.
                 """)
             }
             .font(.caption)
@@ -193,7 +193,7 @@ struct SettingsView: View {
                 .foregroundStyle(isComplete ? Theme.working : Theme.waiting)
                 .imageScale(.medium)
                 .padding(.top, 1)
-                .accessibilityLabel(isComplete ? "Hooks eingetragen" : "Hooks fehlen")
+                .accessibilityLabel(isComplete ? "Hooks installed" : "Hooks missing")
         }
     }
 

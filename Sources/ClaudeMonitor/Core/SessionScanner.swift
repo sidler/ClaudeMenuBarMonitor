@@ -91,16 +91,22 @@ enum SessionScanner {
             case .notification:
                 if hook.isPermissionRequest {
                     state = .awaitingApproval
-                    headline = hook.toolSummary ?? digest.headline ?? "Freigabe angefragt"
+                    headline = hook.toolSummary ?? digest.headline ?? "Approval requested"
                     detail = hook.toolDetail ?? hook.message
                 } else {
                     state = .awaitingReply
-                    headline = digest.headline ?? "Wartet auf deine Antwort"
+                    headline = digest.headline ?? "Waiting for your reply"
                     detail = digest.detail ?? hook.message
                 }
             case .preToolUse, .postToolUse, .userPromptSubmit, .sessionStart:
-                state = .working
-                headline = hook.toolSummary ?? headline
+                // Ein Arbeits-Signal gilt nur, solange es frisch ist. Sonst stünde eine
+                // Session, die startet und dann liegen bleibt, dauerhaft auf „arbeitet“.
+                if now.timeIntervalSince(hook.at) < config.idleAfter {
+                    state = .working
+                    headline = hook.toolSummary ?? headline
+                } else {
+                    state = .idle
+                }
             case .stop, .subagentStop, .sessionEnd:
                 state = .idle
             }

@@ -20,12 +20,12 @@ enum Entry {
         }
         if CommandLine.arguments.contains("--install-hooks") {
             do { try HookInstaller.install(); print(HookInstaller.status().text) }
-            catch { print("Fehlgeschlagen: \(error.localizedDescription)") }
+            catch { print("Failed: \(error.localizedDescription)") }
             return
         }
         if CommandLine.arguments.contains("--uninstall-hooks") {
             do { try HookInstaller.uninstall(); print(HookInstaller.status().text) }
-            catch { print("Fehlgeschlagen: \(error.localizedDescription)") }
+            catch { print("Failed: \(error.localizedDescription)") }
             return
         }
         ClaudeMonitorApp.main()

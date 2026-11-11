@@ -81,12 +81,12 @@ enum TranscriptParser {
                 d.lastEntryAt = at ?? d.lastEntryAt
                 if isToolResult {
                     d.lastKind = .toolResult
-                    d.headline = lastToolSummary.map { "\($0) · Ergebnis" } ?? "Werkzeug · Ergebnis"
+                    d.headline = lastToolSummary.map { "\($0) · result" } ?? "Tool · result"
                 } else {
                     d.turns += 1
                     d.lastKind = .userPrompt
                     let text = plainText(msg?["content"])
-                    d.headline = text.map { "Du: \($0.truncated(to: 140))" }
+                    d.headline = text.map { "You: \($0.truncated(to: 140))" }
                     d.detail = text?.truncated(to: 240)
                     if let at, let text { append(&d, ActivityItem(id: "u-\(at.timeIntervalSince1970)", at: at, kind: .prompt, text: text.truncated(to: 90))) }
                 }
@@ -114,7 +114,7 @@ enum TranscriptParser {
                     if let at { append(&d, ActivityItem(id: "a-\(at.timeIntervalSince1970)", at: at, kind: .answer, text: text.truncated(to: 90))) }
                 } else if blocks.contains(where: { ($0["type"] as? String) == "thinking" }) {
                     d.lastKind = .thinking
-                    d.headline = "Denkt nach"
+                    d.headline = "Thinking"
                 }
             default:
                 continue
@@ -150,7 +150,7 @@ enum TranscriptParser {
 
     /// „Bash · composer update“ für die Liste, der volle Befehl fürs Popover.
     static func toolSummary(_ block: [String: Any]) -> (short: String, long: String?) {
-        let name = (block["name"] as? String) ?? "Werkzeug"
+        let name = (block["name"] as? String) ?? "Tool"
         let input = (block["input"] as? [String: Any]) ?? [:]
         let display = name.hasPrefix("mcp__")
             ? name.split(separator: "_").filter { !$0.isEmpty }.dropFirst().first.map(String.init) ?? name

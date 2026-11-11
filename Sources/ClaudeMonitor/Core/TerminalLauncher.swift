@@ -64,9 +64,9 @@ enum TerminalLauncher {
 
         var errorDescription: String? {
             switch self {
-            case let .appMissing(id): "Terminal nicht gefunden: \(id)"
-            case let .commandFailed(reason): "Befehl fehlgeschlagen: \(reason)"
-            case let .urlInvalid(url): "Ungültige Adresse: \(url)"
+            case let .appMissing(id): "Terminal not found: \(id)"
+            case let .commandFailed(reason): "Command failed: \(reason)"
+            case let .urlInvalid(url): "Invalid URL: \(url)"
             }
         }
     }

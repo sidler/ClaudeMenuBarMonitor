@@ -22,7 +22,7 @@ struct MenuBarLabel: View {
     }
 
     private var accessibilityText: String {
-        guard let state else { return "Claude Monitor — keine aktive Session" }
+        guard let state else { return "Claude Monitor — no active session" }
         return "Claude Monitor — \(count) × \(state.title)"
     }
 }

@@ -26,7 +26,7 @@ struct SessionDetailView: View {
             }
             .frame(width: 400)
         } else {
-            Text("Session beendet")
+            Text("Session ended")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .padding(20)
@@ -73,7 +73,7 @@ struct SessionDetailView: View {
 
     private func waitingCard(_ session: Session) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("\(session.state == .awaitingApproval ? "Berechtigung angefragt" : "Rückfrage") — seit \(Fmt.elapsed(since: session.stateSince, now: store.now))")
+            Text("\(session.state == .awaitingApproval ? "Permission requested" : "Question") — \(Fmt.elapsed(since: session.stateSince, now: store.now)) ago")
                 .font(.system(size: 11, weight: .semibold))
                 .kerning(0.3)
                 .textCase(.uppercase)
@@ -91,15 +91,15 @@ struct SessionDetailView: View {
 
     private func numbers(_ session: Session) -> some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 3), spacing: 12) {
-            metric("Modell", Fmt.modelName(session.model) ?? "—")
-            metric("Laufzeit", session.startedAt.map { Fmt.elapsed(since: $0, now: store.now) } ?? "—")
+            metric("Model", Fmt.modelName(session.model) ?? "—")
+            metric("Running", session.startedAt.map { Fmt.elapsed(since: $0, now: store.now) } ?? "—")
             metric("Prompts", "\(session.turns)")
-            metric("Kosten", session.costUSD.map(Fmt.money) ?? "—")
-            metric("Änderungen", "+\(session.linesAdded) / −\(session.linesRemoved)")
-            metric("Werkzeuge", "\(session.toolCalls)")
+            metric("Cost", session.costUSD.map(Fmt.money) ?? "—")
+            metric("Changes", "+\(session.linesAdded) / −\(session.linesRemoved)")
+            metric("Tools", "\(session.toolCalls)")
         }
         .overlay(alignment: .bottomLeading) {
-            Text("Prompts und Werkzeuge aus dem gelesenen Dateiende")
+            Text("Prompts and tools counted from the tail of the transcript")
                 .font(.system(size: 9))
                 .foregroundStyle(.tertiary)
                 .offset(y: 13)
@@ -123,7 +123,7 @@ struct SessionDetailView: View {
     private func context(_ session: Session, fraction: Double) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Kontextfenster")
+                Text("Context window")
                     .font(.system(size: 10, weight: .medium))
                     .kerning(0.4)
                     .textCase(.uppercase)
@@ -142,7 +142,7 @@ struct SessionDetailView: View {
 
     private func history(_ session: Session) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("Letzte Schritte")
+            Text("Recent steps")
                 .font(.system(size: 10, weight: .medium))
                 .kerning(0.4)
                 .textCase(.uppercase)
@@ -171,18 +171,18 @@ struct SessionDetailView: View {
 
     private func label(for item: ActivityItem) -> String {
         switch item.kind {
-        case .prompt: "Du: \(item.text)"
+        case .prompt: "You: \(item.text)"
         case .tool, .answer, .notice: item.text
         }
     }
 
     private func actions(_ session: Session) -> some View {
         HStack(spacing: 8) {
-            Button("Im Terminal öffnen") { store.openInTerminal(session) }
+            Button("Open in terminal") { store.openInTerminal(session) }
                 .buttonStyle(.glassProminent)
                 .disabled(session.cwd == nil)
 
-            Button("Fortsetzen kopieren") { store.copyResumeCommand(session) }
+            Button("Copy resume command") { store.copyResumeCommand(session) }
                 .buttonStyle(.glass)
 
             Button {
@@ -191,7 +191,7 @@ struct SessionDetailView: View {
                 Image(systemName: "folder")
             }
             .buttonStyle(.glass)
-            .accessibilityLabel("Im Finder zeigen")
+            .accessibilityLabel("Reveal in Finder")
         }
         .controlSize(.small)
     }

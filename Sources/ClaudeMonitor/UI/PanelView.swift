@@ -20,9 +20,9 @@ struct PanelView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 2) {
-                        group("Wartet auf dich", store.waiting, tint: Theme.waiting)
-                        group("Arbeitet", store.working, tint: nil)
-                        group("Ruht", store.resting, tint: nil)
+                        group("Waiting for you", store.waiting, tint: Theme.waiting)
+                        group("Working", store.working, tint: nil)
+                        group("Idle", store.resting, tint: nil)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 6)
@@ -69,7 +69,7 @@ struct PanelView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Einstellungen")
+            .accessibilityLabel("Settings")
         }
         .padding(.horizontal, 14)
         .padding(.top, 12)
@@ -114,7 +114,7 @@ struct PanelView: View {
             Image(systemName: "moon.zzz")
                 .font(.system(size: 22))
                 .foregroundStyle(.tertiary)
-            Text("Keine Session der letzten 24 Stunden")
+            Text("No sessions in the last 24 hours")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
         }
@@ -126,7 +126,7 @@ struct PanelView: View {
         VStack(spacing: 0) {
             if let lastScan = store.lastScan {
                 HStack {
-                    Text("Aktualisiert vor \(Fmt.elapsed(since: lastScan, now: store.now))")
+                    Text("Updated \(Fmt.elapsed(since: lastScan, now: store.now)) ago")
                         .font(.system(size: 10))
                         .foregroundStyle(.tertiary)
                     Spacer()
@@ -136,14 +136,14 @@ struct PanelView: View {
             }
 
             HStack(spacing: 8) {
-                Button("Projektordner") {
+                Button("Project folder") {
                     NSWorkspace.shared.open(store.config.projectsRoot)
                 }
                 .buttonStyle(.glass)
 
                 Spacer()
 
-                Button("Beenden") {
+                Button("Quit") {
                     NSApplication.shared.terminate(nil)
                 }
                 .buttonStyle(.glass)

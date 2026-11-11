@@ -24,19 +24,19 @@ enum SessionState: String, Sendable, CaseIterable, Comparable {
 
     var groupTitle: String {
         switch group {
-        case 0: "Wartet auf dich"
-        case 1: "Arbeitet"
-        default: "Ruht"
+        case 0: "Waiting for you"
+        case 1: "Working"
+        default: "Idle"
         }
     }
 
     var title: String {
         switch self {
-        case .awaitingApproval: "Freigabe nötig"
-        case .awaitingReply: "Rückfrage offen"
-        case .working: "Arbeitet"
-        case .aborted: "Abgebrochen"
-        case .idle: "Ruht"
+        case .awaitingApproval: "Needs approval"
+        case .awaitingReply: "Awaiting reply"
+        case .working: "Working"
+        case .aborted: "Aborted"
+        case .idle: "Idle"
         }
     }
 
