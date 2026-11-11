@@ -116,3 +116,7 @@ Sources/ClaudeMonitor/
 - Ohne Xcode gibt es keine SwiftUI-Previews: `@State` ist inzwischen ein Makro, dessen
   Plugin nur Xcode mitbringt. Die App kommt deshalb ohne `@State` aus — die Auswahl liegt
   im `SessionStore`.
+
+## Lizenz
+
+MIT — siehe [LICENSE](LICENSE).
