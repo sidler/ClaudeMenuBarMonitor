@@ -55,6 +55,13 @@ enum Fmt {
         date.formatted(.dateTime.hour().minute())
     }
 
+    /// Time of day for today, date plus time for anything older.
+    static func clockOrDate(_ date: Date, now: Date = .now) -> String {
+        Calendar.current.isDate(date, inSameDayAs: now)
+            ? date.formatted(.dateTime.hour().minute())
+            : date.formatted(.dateTime.day().month(.abbreviated).hour().minute())
+    }
+
     static func money(_ value: Double) -> String {
         value.formatted(.currency(code: "USD").precision(.fractionLength(2)))
     }

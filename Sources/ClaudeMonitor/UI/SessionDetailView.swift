@@ -19,6 +19,7 @@ struct SessionDetailView: View {
                     if session.state.needsAttention { waitingCard(session) }
                     numbers(session)
                     if let fraction = session.contextFraction { context(session, fraction: fraction) }
+                    if let usage = store.usage { usageSection(session, usage) }
                     if !session.recent.isEmpty { history(session) }
                     actions(session)
                 }
@@ -138,6 +139,94 @@ struct SessionDetailView: View {
                 .progressViewStyle(.linear)
                 .tint(fraction > 0.85 ? Theme.waiting : Theme.working)
         }
+    }
+
+    // MARK: - Usage
+
+    /// Session, five-hour block and week. The plan percentages are the real quota figures;
+    /// the token counts are ours. The footnote says which is which rather than blending them.
+    private func usageSection(_ session: Session, _ usage: UsageSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("Usage")
+                .font(.system(size: 10, weight: .medium))
+                .kerning(0.4)
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+
+            usageRow(
+                "Session",
+                percent: nil,
+                detail: [
+                    usage.sessionTokens[session.id].map { "\(Fmt.tokens($0)) tokens" },
+                    session.costUSD.map(Fmt.money)
+                ].compactMap { $0 }.joined(separator: " · ")
+            )
+
+            usageRow(
+                "5-hour block",
+                percent: usage.planFiveHourPercent,
+                detail: [
+                    "\(Fmt.tokens(usage.fiveHour.tokens)) tokens",
+                    usage.fiveHour.resets.map {
+                        "resets \(Fmt.clockOrDate($0))\(usage.fiveHour.resetIsEstimate ? "*" : "")"
+                    }
+                ].compactMap { $0 }.joined(separator: " · ")
+            )
+
+            usageRow(
+                "Week",
+                percent: usage.planWeekPercent,
+                detail: "\(Fmt.tokens(usage.week.tokens)) tokens · \(usage.week.sessions) sessions"
+            )
+
+            Text(footnote(usage))
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func usageRow(_ label: String, percent: Int?, detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(label)
+                .font(.system(size: 12))
+                .frame(width: 92, alignment: .leading)
+
+            if let percent {
+                ProgressView(value: min(1, Double(percent) / 100))
+                    .progressViewStyle(.linear)
+                    .tint(percent >= 80 ? Theme.waiting : Theme.working)
+                    .frame(width: 54)
+                    .padding(.top, 2)
+                Text("\(percent) %")
+                    .font(.system(size: 12))
+                    .monospacedDigit()
+                    .frame(width: 34, alignment: .trailing)
+            }
+
+            Text(detail)
+                .font(.system(size: 11))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func footnote(_ usage: UsageSnapshot) -> String {
+        var parts: [String] = []
+        if let sampledAt = usage.planSampledAt {
+            parts.append("Plan figures sampled \(Fmt.elapsed(since: sampledAt, now: store.now)) ago")
+        } else {
+            parts.append("No plan figures available")
+        }
+        parts.append("tokens counted locally, cache reads excluded")
+        if usage.fiveHour.resetIsEstimate, usage.fiveHour.resets != nil {
+            parts.append("* reset estimated from activity")
+        }
+        return parts.joined(separator: " · ")
     }
 
     private func history(_ session: Session) -> some View {

@@ -17,6 +17,8 @@ final class SessionStore {
     private(set) var hookStatus: HookInstaller.Status = .notInstalled
     private(set) var hookError: String?
     private(set) var terminalError: String?
+    /// Usage across all sessions. Costly to compute, so it runs on its own slow timer.
+    private(set) var usage: UsageSnapshot?
 
     @ObservationIgnored private var watcher: FSEventWatcher?
     @ObservationIgnored private var debounce: Task<Void, Never>?
@@ -60,6 +62,7 @@ final class SessionStore {
         }
         startTicker()
         scheduleRefresh(delay: .zero)
+        refreshUsage()
     }
 
     func stop() {
@@ -90,6 +93,8 @@ final class SessionStore {
                 ticks += 1
                 // Safety net in case FSEvents ever stays silent.
                 if ticks % 10 == 0 { self.scheduleRefresh(delay: .zero) }
+                // The usage scan reads whole transcripts — every five minutes is plenty.
+                if ticks % 300 == 0 { self.refreshUsage() }
             }
         }
     }
@@ -119,6 +124,18 @@ final class SessionStore {
             announced.insert(key)
         }
         announced.formIntersection(seen)
+    }
+
+    // MARK: - Usage
+
+    func refreshUsage() {
+        let config = config
+        Task { [weak self] in
+            let snapshot = await Task.detached(priority: .background) {
+                UsageReader.snapshot(config)
+            }.value
+            self?.usage = snapshot
+        }
     }
 
     // MARK: - Hooks

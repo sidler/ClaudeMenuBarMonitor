@@ -14,6 +14,10 @@ enum Entry {
             IconPreview.write(to: CommandLine.arguments[index + 1])
             return
         }
+        if CommandLine.arguments.contains("--usage") {
+            UsageDump.run()
+            return
+        }
         if CommandLine.arguments.contains("--hooks") {
             print(HookInstaller.status().text)
             return

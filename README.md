@@ -82,6 +82,31 @@ command. Terminals with neither route raise a warning in Settings that points at
 command, and the **Test** button opens a project folder right away so a wrong line does not
 surface later.
 
+## Usage figures
+
+The popover shows three lines: this session, the current five-hour block, and the last
+seven days. They come from three sources, and the footnote in the popover says which:
+
+- **Plan percentages** — the real quota figures behind `/usage`. The desktop app samples
+  them into `~/Library/Application Support/Claude/plan-usage-history.json`; the app reads
+  that file and shows how old the sample is. No sample, no percentage.
+- **Token counts** — summed from the transcripts, so always current, but they are *our*
+  sum rather than Anthropic's accounting, which weighs models differently. Cache reads are
+  excluded: they dwarf everything else and say little about the quota.
+- **Reset times** — a five-hour block starts with its first request and lasts five hours,
+  so the reset is derived from activity and marked with `*`. When a request was actually
+  rejected, the transcript carries `quotaLimits.resetsAt`, and that exact value wins. The
+  weekly anchor cannot be read locally, so no weekly reset is shown.
+
+The scan reads whole transcripts rather than their tails and therefore runs on its own
+five-minute timer. It searches the mapped files for byte patterns and only decodes the
+lines that match — over 1.2 GB of transcripts that is the difference between 0.7 seconds
+and over a minute.
+
+```sh
+.build/release/ClaudeMonitor --usage
+```
+
 ## Menu bar symbol
 
 Selectable in Settings, with every state previewed next to the picker. Only symbols that
