@@ -90,6 +90,16 @@ struct SessionDetailView: View {
     }
 
     private func numbers(_ session: Session) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            grid(session)
+            // Sat in an overlay before, which put it on top of the next heading.
+            Text("Prompts and tools counted from the tail of the transcript")
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private func grid(_ session: Session) -> some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 3), spacing: 12) {
             metric("Model", Fmt.modelName(session.model) ?? "—")
             metric("Running", session.startedAt.map { Fmt.elapsed(since: $0, now: store.now) } ?? "—")
@@ -97,12 +107,6 @@ struct SessionDetailView: View {
             metric("Cost", session.costUSD.map(Fmt.money) ?? "—")
             metric("Changes", "+\(session.linesAdded) / −\(session.linesRemoved)")
             metric("Tools", "\(session.toolCalls)")
-        }
-        .overlay(alignment: .bottomLeading) {
-            Text("Prompts and tools counted from the tail of the transcript")
-                .font(.system(size: 9))
-                .foregroundStyle(.tertiary)
-                .offset(y: 13)
         }
     }
 

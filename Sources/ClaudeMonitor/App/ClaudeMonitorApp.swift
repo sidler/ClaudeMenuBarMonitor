@@ -1,7 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// Entry point. `--scan` prints the detected state to the console and exits.
+/// Entry point. The flags are development tools: `--scan` and `--usage` print what
+/// the app would show, `--demo` fills it with fabricated sessions, `--screenshots`
+/// photographs it for the README.
 @main
 enum Entry {
     static func main() {
@@ -32,6 +34,13 @@ enum Entry {
             catch { print("Failed: \(error.localizedDescription)") }
             return
         }
+        #if DEBUG
+        if let index = CommandLine.arguments.firstIndex(of: "--screenshots"),
+           CommandLine.arguments.count > index + 1 {
+            Screenshots.run(outputDirectory: CommandLine.arguments[index + 1])
+            return
+        }
+        #endif
         ClaudeMonitorApp.main()
     }
 }
@@ -58,6 +67,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // No Dock icon, no window at launch — the app lives in the menu bar.
         NSApp.setActivationPolicy(.accessory)
+        #if DEBUG
+        // `--demo` fills the panel with fabricated sessions instead of reading the
+        // machine's own: the app to look at and click through, with nobody's real
+        // work in it.
+        if CommandLine.arguments.contains("--demo") {
+            SessionStore.shared.loadDemo()
+            return
+        }
+        #endif
         SessionStore.shared.start()
     }
 

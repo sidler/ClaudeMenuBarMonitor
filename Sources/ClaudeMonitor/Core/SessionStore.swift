@@ -19,8 +19,11 @@ final class SessionStore {
     private(set) var terminalError: String?
     /// Usage across all sessions. Costly to compute, so it runs on its own slow timer.
     private(set) var usage: UsageSnapshot?
-    /// Ruhende Sessions sind der Normalfall und selten das, was man sehen will.
+    /// Idle sessions are the normal case and rarely what you came to look at.
     var idleExpanded = false
+    /// Set by `--demo`. The timers then stay off and nothing overwrites the
+    /// fabricated data the store was handed.
+    private(set) var isDemo = false
 
     @ObservationIgnored private var watcher: FSEventWatcher?
     @ObservationIgnored private var debounce: Task<Void, Never>?
@@ -132,7 +135,7 @@ final class SessionStore {
     // MARK: - Usage
 
     func refreshUsage() {
-        guard !usageInFlight else { return }
+        guard !isDemo, !usageInFlight else { return }
         usageInFlight = true
         let config = config
         Task { [weak self] in
@@ -210,3 +213,21 @@ final class SessionStore {
 extension SessionStore {
     static let shared = SessionStore()
 }
+
+#if DEBUG
+extension SessionStore {
+    /// Fills the store with fabricated sessions, so the panel can be shown -- and
+    /// photographed for the README -- without anybody's real work in the picture.
+    ///
+    /// Deliberately not `start()`: no watcher, no ticker, no scan. Nothing here
+    /// moves, which is what a screenshot wants.
+    func loadDemo(now: Date = .now) {
+        isDemo = true
+        sessions = DemoData.sessions(now: now)
+        usage = DemoData.usage(now: now)
+        lastScan = now.addingTimeInterval(-6)
+        self.now = now
+        hookStatus = .installed
+    }
+}
+#endif
