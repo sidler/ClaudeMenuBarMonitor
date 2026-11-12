@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- The panel no longer draws a focus ring. SwiftUI gives the first control in a window
+  keyboard focus as it opens, which put a blue ring around the gear every time the panel
+  appeared. It is a menu surface, and macOS draws no focus ring in a menu.
+
 ## 1.0
 
 First release.

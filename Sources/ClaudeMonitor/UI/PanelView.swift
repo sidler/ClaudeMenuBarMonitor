@@ -39,6 +39,10 @@ struct PanelView: View {
             footer
         }
         .frame(width: Theme.panelWidth)
+        // A menu surface, and macOS draws no focus ring in a menu. SwiftUI gives the
+        // first control in the window keyboard focus as it opens, which put a blue
+        // ring around the gear every time the panel appeared.
+        .focusEffectDisabled()
         .task { store.refreshUsageIfStale() }
     }
 
