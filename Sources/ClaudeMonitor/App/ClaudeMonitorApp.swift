@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 import SwiftUI
 
 /// Entry point. The flags are development tools: `--scan` and `--usage` print what
@@ -35,6 +36,20 @@ enum Entry {
             return
         }
         #if DEBUG
+        // A login item can only be withdrawn by a bundle carrying the identifier it
+        // was registered under. After the identifier changed, the old registration
+        // was left pointing at a build directory with nothing to call back to --
+        // this is how such a leftover is taken out.
+        if CommandLine.arguments.contains("--unregister-login-item") {
+            let service = SMAppService.mainApp
+            do {
+                try service.unregister()
+                print("unregistered \(Bundle.main.bundleIdentifier ?? "?") -- status is now \(service.status.rawValue)")
+            } catch {
+                print("failed: \(error.localizedDescription)")
+            }
+            return
+        }
         if let index = CommandLine.arguments.firstIndex(of: "--screenshots"),
            CommandLine.arguments.count > index + 1 {
             Screenshots.run(outputDirectory: CommandLine.arguments[index + 1])
