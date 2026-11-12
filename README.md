@@ -162,6 +162,9 @@ Sources/ClaudeMonitor/
   and discards the color. `MenuBarIcon` therefore draws the symbol by hand as an `NSImage`
   with `isTemplate = false`. States differ in the shape of the dot (filled / ring) as well,
   not in color alone.
+- **Settings window**: an accessory app does not take focus by itself, so `SettingsLink`
+  opened the window behind everything else and looked like a dead button. The gear now
+  activates the app and raises that window explicitly.
 - No SwiftUI previews without Xcode: `@State` is a macro these days and its plugin ships
   with Xcode only. The app works without `@State` — the selection lives in `SessionStore`.
 

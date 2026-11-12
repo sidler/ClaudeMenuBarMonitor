@@ -3,6 +3,8 @@ import SwiftUI
 struct PanelView: View {
     let store: SessionStore
 
+    @Environment(\.openSettings) private var openSettings
+
     private func presented(_ id: Session.ID) -> Binding<Bool> {
         Binding(
             get: { store.selectedID == id },
@@ -52,6 +54,21 @@ struct PanelView: View {
         return min(content, Theme.panelMaxHeight)
     }
 
+    /// `SettingsLink` opens the window, but an accessory app never takes focus, so it
+    /// appeared behind everything else and looked like nothing had happened. Opening it
+    /// means activating the app and raising that window by hand.
+    private func showSettings() {
+        openSettings()
+        NSApp.activate()
+        DispatchQueue.main.async {
+            let settings = NSApp.windows.first {
+                ($0.identifier?.rawValue ?? "").localizedCaseInsensitiveContains("settings")
+            }
+            settings?.makeKeyAndOrderFront(nil)
+            settings?.center()
+        }
+    }
+
     // MARK: - Parts
 
     private var header: some View {
@@ -64,7 +81,7 @@ struct PanelView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            SettingsLink {
+            Button(action: showSettings) {
                 Image(systemName: "gearshape")
                     .imageScale(.medium)
                     .foregroundStyle(.secondary)
