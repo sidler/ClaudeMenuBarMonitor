@@ -19,13 +19,14 @@ struct SessionDetailView: View {
                     if session.state.needsAttention { waitingCard(session) }
                     numbers(session)
                     if let fraction = session.contextFraction { context(session, fraction: fraction) }
-                    if let usage = store.usage { usageSection(session, usage) }
+                    usageSection(session, store.usage)
                     if !session.recent.isEmpty { history(session) }
                     actions(session)
                 }
                 .padding(14)
             }
             .frame(width: 400)
+            .task { store.refreshUsageIfStale() }
         } else {
             Text("Session ended")
                 .font(.system(size: 12))
@@ -145,13 +146,27 @@ struct SessionDetailView: View {
 
     /// Session, five-hour block and week. The plan percentages are the real quota figures;
     /// the token counts are ours. The footnote says which is which rather than blending them.
-    private func usageSection(_ session: Session, _ usage: UsageSnapshot) -> some View {
+    @ViewBuilder
+    private func usageSection(_ session: Session, _ snapshot: UsageSnapshot?) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             Text("Usage")
                 .font(.system(size: 10, weight: .medium))
                 .kerning(0.4)
                 .textCase(.uppercase)
                 .foregroundStyle(.secondary)
+
+            if let usage = snapshot {
+                usageBody(session, usage)
+            } else {
+                Text("Collecting — the scan reads whole transcripts")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    private func usageBody(_ session: Session, _ usage: UsageSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
 
             usageRow(
                 "Session",

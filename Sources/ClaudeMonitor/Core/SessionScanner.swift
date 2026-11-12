@@ -17,6 +17,7 @@ enum SessionScanner {
     static func scan(_ config: ScanConfig, now: Date = .now) -> [Session] {
         let fm = FileManager.default
         let hooks = HookSpool.latestBySession(maxAge: config.maxAge)
+        let registry = SessionRegistry.entries()
         let cutoff = now.addingTimeInterval(-config.maxAge)
 
         guard let projectDirs = try? fm.contentsOfDirectory(
@@ -51,6 +52,7 @@ enum SessionScanner {
                     digest: digest,
                     created: created,
                     hook: hooks[id],
+                    registry: registry[id],
                     config: config,
                     now: now
                 ))
@@ -75,6 +77,7 @@ enum SessionScanner {
         digest: TranscriptDigest,
         created: Date?,
         hook: HookEvent?,
+        registry: RegistryEntry?,
         config: ScanConfig,
         now: Date
     ) -> Session {
@@ -112,12 +115,41 @@ enum SessionScanner {
             }
         }
 
+        // Claude Code keeps its own registry of running sessions and maintains a status
+        // there. That beats both of the above: no guessing from timestamps.
+        if let registry {
+            switch registry.status {
+            case "busy", "shell":
+                state = .working
+            case "waiting":
+                // `waitingFor` is set while a session waits, but its values are
+                // undocumented, so the hook stays the better witness for *what* is awaited.
+                if hook?.isPermissionRequest == true {
+                    state = .awaitingApproval
+                } else if let waitingFor = registry.waitingFor {
+                    state = .awaitingApproval
+                    headline = waitingFor
+                } else {
+                    state = .awaitingReply
+                }
+            case "idle":
+                state = .idle
+            default:
+                break       // unknown status: leave what the file and the hook said
+            }
+            if let updated = registry.statusUpdatedAt { since = updated }
+        } else if state == .working || state.needsAttention {
+            // No live process, so nothing can be running or waiting for an answer.
+            state = digest.errorAt != nil ? .aborted : .idle
+        }
+
         return Session(
             id: id,
             transcript: file,
             projectSlug: slug,
-            title: digest.customTitle ?? URL(fileURLWithPath: digest.cwd ?? slug).lastPathComponent,
-            cwd: digest.cwd ?? hook?.cwd,
+            title: digest.customTitle ?? registry?.name
+                ?? URL(fileURLWithPath: digest.cwd ?? slug).lastPathComponent,
+            cwd: digest.cwd ?? registry?.cwd ?? hook?.cwd,
             gitBranch: digest.gitBranch,
             model: digest.model,
             permissionMode: digest.permissionMode,
@@ -126,7 +158,7 @@ enum SessionScanner {
             lastActivity: activity,
             headline: headline,
             detail: detail,
-            startedAt: digest.startedAt ?? created,
+            startedAt: digest.startedAt ?? registry?.startedAt ?? created,
             turns: digest.turns,
             toolCalls: digest.toolCalls,
             costUSD: digest.costUSD,

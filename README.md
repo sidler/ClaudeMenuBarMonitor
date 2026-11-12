@@ -57,15 +57,30 @@ event per session is kept, the rest is spent.
 
 ## The five states
 
+Three sources, in order of authority:
+
+1. **`~/.claude/sessions/<pid>.json`** — Claude Code's own registry of running sessions.
+   Each one writes its pid, session id, project folder and a `status` it maintains itself:
+   `busy`, `shell`, `idle` or `waiting`. Entries whose process is gone are ignored, so a
+   crashed session cannot linger as “working”. A session that is not in the registry is not
+   running, and the app will never show it as working or waiting.
+2. **Hooks** — they still decide *what* a waiting session waits for: a permission prompt or
+   an answer. The registry's `waitingFor` field is used when no hook event is available;
+   its values are undocumented, so the hook stays the better witness.
+3. **Transcripts** — everything else: the headline, the recent steps, cost and token counts,
+   and the state of sessions that are no longer running.
+
 | State | Meaning | How it is detected |
 | --- | --- | --- |
-| **Needs approval** | a permission prompt is pending | `Notification` hook whose message mentions permission |
-| **Awaiting reply** | turn finished, Claude asked something | `Notification` hook without a permission message |
-| **Working** | a turn is running | last entry is a tool call or result, file younger than 90 s |
-| **Idle** | an answer is in, nothing pending | last entry is assistant text, or the `Stop` hook fired |
-| **Aborted** | turn stopped or errored | error entry in the transcript |
+| **Needs approval** | a permission prompt is pending | registry `waiting` plus a permission `Notification` hook or `waitingFor` |
+| **Awaiting reply** | turn finished, Claude asked something | registry `waiting` without either |
+| **Working** | a turn is running | registry `busy` or `shell` |
+| **Idle** | an answer is in, nothing pending | registry `idle`, or no live process |
+| **Aborted** | turn stopped or errored | error entry in the transcript, no live process |
 
-Sorting: waiting → working → idle, newest change first within each group. Notifications
+Idle sessions are the normal case and collapsed by default — the group header shows the
+count and opens on click. Sorting: waiting → working → idle, newest change first within
+each group. Notifications
 fire only on the transition into a waiting state, once per session and turn. Sessions with
 no activity for 24 hours drop off the list.
 
@@ -122,8 +137,8 @@ stay readable at 16 pixels are offered. To render the full sheet:
 Sources/ClaudeMonitor/
   App/      entry point, --scan and preview modes
   Model/    Session, SessionState
-  Core/     TranscriptParser, HookEvents, HookInstaller, SessionScanner, FSEventWatcher,
-            SessionStore, TerminalLauncher, Notifier
+  Core/     TranscriptParser, HookEvents, HookInstaller, SessionRegistry, SessionScanner,
+            FSEventWatcher, SessionStore, UsageReader, TerminalLauncher, Notifier
   UI/       MenuBarIcon, MenuBarLabel, PanelView, SessionRow, SessionDetailView,
             SettingsView, Theme
 ```

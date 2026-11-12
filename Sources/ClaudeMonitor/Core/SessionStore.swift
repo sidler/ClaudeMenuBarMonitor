@@ -19,11 +19,14 @@ final class SessionStore {
     private(set) var terminalError: String?
     /// Usage across all sessions. Costly to compute, so it runs on its own slow timer.
     private(set) var usage: UsageSnapshot?
+    /// Ruhende Sessions sind der Normalfall und selten das, was man sehen will.
+    var idleExpanded = false
 
     @ObservationIgnored private var watcher: FSEventWatcher?
     @ObservationIgnored private var debounce: Task<Void, Never>?
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var announced: Set<String> = []
+    @ObservationIgnored private var usageInFlight = false
 
     // MARK: - Numbers behind the menu bar symbol
 
@@ -129,13 +132,22 @@ final class SessionStore {
     // MARK: - Usage
 
     func refreshUsage() {
+        guard !usageInFlight else { return }
+        usageInFlight = true
         let config = config
         Task { [weak self] in
-            let snapshot = await Task.detached(priority: .background) {
+            let snapshot = await Task.detached(priority: .utility) {
                 UsageReader.snapshot(config)
             }.value
             self?.usage = snapshot
+            self?.usageInFlight = false
         }
+    }
+
+    /// Called when a popover opens, so the figures are never stale by minutes.
+    func refreshUsageIfStale(maxAge: TimeInterval = 60) {
+        guard let usage else { return refreshUsage() }
+        if Date.now.timeIntervalSince(usage.computedAt) > maxAge { refreshUsage() }
     }
 
     // MARK: - Hooks

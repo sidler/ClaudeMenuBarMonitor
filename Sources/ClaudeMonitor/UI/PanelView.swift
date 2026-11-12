@@ -22,7 +22,7 @@ struct PanelView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         group("Waiting for you", store.waiting, tint: Theme.waiting)
                         group("Working", store.working, tint: nil)
-                        group("Idle", store.resting, tint: nil)
+                        group("Idle", store.resting, tint: nil, collapsible: true)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 6)
@@ -47,7 +47,8 @@ struct PanelView: View {
         let rowHeight: CGFloat = 48
         let groupHeader: CGFloat = 26
         let groups = [store.waiting, store.working, store.resting].count { !$0.isEmpty }
-        let content = CGFloat(store.sessions.count) * rowHeight + CGFloat(groups) * groupHeader + 12
+        let rows = store.waiting.count + store.working.count + (store.idleExpanded ? store.resting.count : 0)
+        let content = CGFloat(rows) * rowHeight + CGFloat(groups) * groupHeader + 12
         return min(content, Theme.panelMaxHeight)
     }
 
@@ -77,33 +78,59 @@ struct PanelView: View {
     }
 
     @ViewBuilder
-    private func group(_ title: String, _ sessions: [Session], tint: Color?) -> some View {
+    private func group(_ title: String, _ sessions: [Session], tint: Color?, collapsible: Bool = false) -> some View {
         if !sessions.isEmpty {
-            Text(title)
-                .font(.system(size: 10, weight: .semibold))
-                .kerning(0.6)
-                .textCase(.uppercase)
-                .foregroundStyle(tint ?? .secondary)
+            if collapsible {
+                Button {
+                    store.idleExpanded.toggle()
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("\(title) (\(sessions.count))")
+                            .font(.system(size: 10, weight: .semibold))
+                            .kerning(0.6)
+                            .textCase(.uppercase)
+                            .foregroundStyle(.secondary)
+                        Image(systemName: store.idleExpanded ? "chevron.down" : "chevron.forward")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.tertiary)
+                        Spacer()
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
                 .padding(.horizontal, 8)
                 .padding(.top, 8)
                 .padding(.bottom, 2)
+                .accessibilityLabel("\(title), \(sessions.count) sessions, \(store.idleExpanded ? "expanded" : "collapsed")")
+            } else {
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold))
+                    .kerning(0.6)
+                    .textCase(.uppercase)
+                    .foregroundStyle(tint ?? .secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.top, 8)
+                    .padding(.bottom, 2)
+            }
 
-            ForEach(sessions) { session in
-                SessionRow(
-                    session: session,
-                    now: store.now,
-                    isSelected: store.selectedID == session.id
-                ) {
-                    store.selectedID = store.selectedID == session.id ? nil : session.id
-                }
-                // The modifier belongs on the row: attached to the whole window,
-                // the popover opened at the bottom of the panel instead of next to the entry.
-                .popover(
-                    isPresented: presented(session.id),
-                    attachmentAnchor: .rect(.bounds),
-                    arrowEdge: .trailing
-                ) {
-                    SessionDetailView(store: store, sessionID: session.id)
+            if !collapsible || store.idleExpanded {
+                ForEach(sessions) { session in
+                    SessionRow(
+                        session: session,
+                        now: store.now,
+                        isSelected: store.selectedID == session.id
+                    ) {
+                        store.selectedID = store.selectedID == session.id ? nil : session.id
+                    }
+                    // The modifier belongs on the row: attached to the whole window,
+                    // the popover opened at the bottom of the panel instead of next to the entry.
+                    .popover(
+                        isPresented: presented(session.id),
+                        attachmentAnchor: .rect(.bounds),
+                        arrowEdge: .trailing
+                    ) {
+                        SessionDetailView(store: store, sessionID: session.id)
+                    }
                 }
             }
         }
