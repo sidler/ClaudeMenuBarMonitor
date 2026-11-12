@@ -99,12 +99,14 @@ surface later.
 
 ## Usage figures
 
-The popover shows three lines: this session, the current five-hour block, and the last
-seven days. They come from three sources, and the footnote in the popover says which:
+The panel shows two lines above the footer: the current five-hour block and the last seven
+days. They count for the machine, not for a single session, so they appear once rather than
+in every popover — what is per-session is the context window, and that stays in the popover.
+The figures come from three sources:
 
 - **Plan percentages** — the real quota figures behind `/usage`. The desktop app samples
   them into `~/Library/Application Support/Claude/plan-usage-history.json`; the app reads
-  that file and shows how old the sample is. No sample, no percentage.
+  that file and shows how old the sample is. Without a sample it falls back to token counts.
 - **Token counts** — summed from the transcripts, so always current, but they are *our*
   sum rather than Anthropic's accounting, which weighs models differently. Cache reads are
   excluded: they dwarf everything else and say little about the quota.

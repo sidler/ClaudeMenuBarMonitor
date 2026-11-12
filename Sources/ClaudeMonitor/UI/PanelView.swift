@@ -35,9 +35,11 @@ struct PanelView: View {
             }
 
             Divider()
+            usage
             footer
         }
         .frame(width: Theme.panelWidth)
+        .task { store.refreshUsageIfStale() }
     }
 
     // MARK: - Height
@@ -164,6 +166,76 @@ struct PanelView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 34)
+    }
+
+    // MARK: - Usage
+
+    /// The five-hour block and the week count for the machine, not for one session —
+    /// so they belong here once, not repeated in every popover. What is per-session is
+    /// the context window, and that stays in the popover.
+    @ViewBuilder
+    private var usage: some View {
+        if let usage = store.usage {
+            VStack(spacing: 5) {
+                usageRow(
+                    "5-hour block",
+                    percent: usage.planFiveHourPercent,
+                    tokens: usage.fiveHour.tokens,
+                    trailing: usage.fiveHour.resets.map {
+                        "resets \(Fmt.clockOrDate($0, now: store.now))\(usage.fiveHour.resetIsEstimate ? "*" : "")"
+                    }
+                )
+                usageRow(
+                    "Week",
+                    percent: usage.planWeekPercent,
+                    tokens: usage.week.tokens,
+                    trailing: usage.planSampledAt.map { "sampled \(Fmt.elapsed(since: $0, now: store.now)) ago" }
+                )
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 9)
+            .padding(.bottom, 2)
+            .help("Percentages come from the plan figures the desktop app sampled; tokens are counted locally, cache reads excluded. * means the reset is estimated from activity.")
+        }
+    }
+
+    private func usageRow(_ label: String, percent: Int?, tokens: Int, trailing: String?) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .kerning(0.4)
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+                .frame(width: 86, alignment: .leading)
+
+            if let percent {
+                ProgressView(value: min(1, Double(percent) / 100))
+                    .progressViewStyle(.linear)
+                    .tint(percent >= 80 ? Theme.waiting : Theme.working)
+                    .frame(width: 70)
+                Text("\(percent) %")
+                    .font(.system(size: 11))
+                    .monospacedDigit()
+                    .frame(width: 32, alignment: .trailing)
+            } else {
+                Text("\(Fmt.tokens(tokens)) tokens")
+                    .font(.system(size: 11))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 4)
+
+            if let trailing {
+                Text(trailing)
+                    .font(.system(size: 10))
+                    .monospacedDigit()
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(percent.map { "\($0) percent of plan" } ?? "\(Fmt.tokens(tokens)) tokens")")
     }
 
     private var footer: some View {
