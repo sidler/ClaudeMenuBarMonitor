@@ -4,21 +4,49 @@ A macOS menu bar app that lists every Claude Code session on this machine and sh
 what each one is doing: **working**, **waiting for you**, or **idle**. A popover gives
 short details about the selected session.
 
+<p align="center">
+  <img src="docs/panel.png" alt="The panel, listing two sessions waiting, two working and two idle" width="420">
+  <img src="docs/panel-dark.png" alt="The same panel in dark mode" width="420">
+</p>
+
+Clicking a session opens its details next to the row:
+
+<p align="center">
+  <img src="docs/detail.png" alt="A session's popover: the pending permission request, its numbers, context window and recent steps" width="840">
+</p>
+
 ## Requirements
 
 - macOS 27 or newer (the app uses Liquid Glass: `glassEffect`, `GlassEffectContainer`, `.buttonStyle(.glass)`)
 - Swift 6.4 — the Command Line Tools are enough, Xcode is not required
 
-## Build and run
+## Install
 
 ```sh
-Scripts/bundle.sh release
-open build/ClaudeMonitor.app
+brew tap sidler/tap
+brew trust --cask sidler/tap/claude-monitor
+brew install --cask claude-monitor
 ```
+
+Homebrew asks you to trust a tap that is not its own before it will run anything from
+it; that is what the middle line is for.
+
+Or take the zip from the [latest release](https://github.com/sidler/ClaudeMenuBarMonitor/releases/latest),
+unpack it and move `ClaudeMonitor.app` to `/Applications`. The build is signed with a
+Developer ID, notarised by Apple and has the ticket stapled to the bundle, so it opens
+without a Gatekeeper warning and without the network.
 
 The app has no Dock icon (`LSUIElement`). Quit from the panel, or ⌘Q while it is open.
 
-To inspect the data layer without the UI:
+## Build from source
+
+```sh
+make bundle
+open build/ClaudeMonitor.app
+```
+
+`make install` puts it in `/Applications`, `make run` rebuilds and restarts it. To
+inspect the data layer without the UI:
 
 ```sh
 .build/release/ClaudeMonitor --scan
@@ -133,11 +161,59 @@ stay readable at 16 pixels are offered. To render the full sheet:
 .build/release/ClaudeMonitor --icon-preview /tmp/icons.png
 ```
 
+## Demo data and the pictures above
+
+A real panel means somebody's real work in it: project names, branches, the commands they
+ran. The screenshots in this README are taken from fabricated sessions instead.
+
+```sh
+make demo          # the app, filled with made-up sessions
+make screenshots   # redraws docs/*.png from the same data
+```
+
+`make screenshots` puts real windows on screen and photographs them with `screencapture`,
+so the screen is busy for a few seconds. It has to be a real photograph: the panel has no
+background of its own, and the glass it sits on is composited by the window server out of
+whatever lies behind it — rendered offscreen it comes out empty. Both are debug builds
+only; the shipped app has no way to reach them.
+
+## Releasing a signed, notarised build
+
+```sh
+make release
+```
+
+This builds in release configuration, signs with the Developer ID under a hardened runtime
+and a secure timestamp, submits the zip to Apple, waits, staples the ticket and then asks
+Gatekeeper what another Mac would conclude. It leaves
+`build/release-app/ClaudeMonitor-<version>.zip`.
+
+Two things have to be in place first, and neither can be arranged from the Makefile:
+
+1. A **Developer ID Application** certificate in the keychain. It comes from the paid
+   Apple Developer Program — "Apple Development" is for testing and "Apple Distribution"
+   is for the App Store; neither works here.
+2. Notarisation credentials stored once under a profile name:
+
+   ```sh
+   xcrun notarytool store-credentials ClaudeMonitor \
+     --apple-id <your-apple-id> --team-id <your-team-id> \
+     --password <an app-specific password from appleid.apple.com>
+   ```
+
+   A profile stored for another app does just as well: `make release NOTARY_PROFILE=<name>`.
+
+Publishing is three more steps: tag it, attach the zip to a GitHub release, and update
+`version` and `sha256` in `Casks/claude-monitor.rb` in
+[sidler/homebrew-tap](https://github.com/sidler/homebrew-tap). Take the checksum from the
+file GitHub serves rather than the local zip — a wrong `sha256` fails on the user's
+machine, not on yours.
+
 ## Layout
 
 ```
 Sources/ClaudeMonitor/
-  App/      entry point, --scan and preview modes
+  App/      entry point, --scan and preview modes, demo data and screenshots
   Model/    Session, SessionState
   Core/     TranscriptParser, HookEvents, HookInstaller, SessionRegistry, SessionScanner,
             FSEventWatcher, SessionStore, UsageReader, TerminalLauncher, Notifier

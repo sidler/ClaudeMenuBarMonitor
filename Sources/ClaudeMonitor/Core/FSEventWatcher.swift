@@ -5,7 +5,7 @@ import Foundation
 /// which a plain directory watcher does not report.
 final class FSEventWatcher: @unchecked Sendable {
     private var stream: FSEventStreamRef?
-    private let queue = DispatchQueue(label: "local.ClaudeMonitor.fsevents", qos: .utility)
+    private let queue = DispatchQueue(label: "com.sidler.claudemonitor.fsevents", qos: .utility)
     private let onChange: @Sendable () -> Void
 
     init?(paths: [String], latency: TimeInterval = 0.25, onChange: @escaping @Sendable () -> Void) {

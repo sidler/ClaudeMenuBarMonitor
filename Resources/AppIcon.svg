@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- The app icon: the same terminal-and-dot the menu bar shows, at Dock size.
+       Flat fills only — AppKit reads the SVG itself, and its subset is small. -->
+  <rect x="0" y="0" width="1024" height="1024" rx="229" ry="229" fill="#23262F"/>
+
+  <!-- Terminal window -->
+  <rect x="196" y="288" width="632" height="448" rx="72" ry="72"
+        fill="none" stroke="#EDF1F7" stroke-width="44"/>
+
+  <!-- Prompt -->
+  <polyline points="320,440 424,512 320,584"
+            fill="none" stroke="#EDF1F7" stroke-width="48"
+            stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="476" y="560" width="190" height="40" rx="20" ry="20" fill="#9AA3B2"/>
+
+  <!-- Status badge, punched out of the window's corner -->
+  <circle cx="828" cy="288" r="120" fill="#23262F"/>
+  <circle cx="828" cy="288" r="92" fill="#E8A24A"/>
+</svg>
