@@ -4,12 +4,15 @@ import Foundation
 ///
 /// Three sources, and they are not equally trustworthy:
 ///
-/// 1. **Token counts from the transcripts** — exact and always current, but they are *our*
+/// 1. **The plan percentages Claude Code hands its status line** — Anthropic's own figures
+///    for both windows, with the reset time the API reported, as fresh as the last redraw.
+///    They need the status line bridge (`StatusLineInstaller`) to reach us.
+/// 2. **Token counts from the transcripts** — exact and always current, but they are *our*
 ///    sum, not Anthropic's accounting, which weighs models differently.
-/// 2. **The plan percentages** the desktop app samples into
+/// 3. **The plan percentages** the desktop app samples into
 ///    `~/Library/Application Support/Claude/plan-usage-history.json` — those are the real
 ///    numbers behind `/usage`, but only as fresh as the last sample.
-/// 3. **`quotaLimits.resetsAt`** from a transcript — exact, but only written when a request
+/// 4. **`quotaLimits.resetsAt`** from a transcript — exact, but only written when a request
 ///    was actually rejected.
 ///
 /// The view labels which one it is showing; nothing here pretends to be more than it is.
@@ -26,10 +29,20 @@ struct UsageSnapshot: Sendable {
     var fiveHour = Window()
     var week = Window()
 
-    /// Percentages as the desktop app last sampled them, plus the age of that sample.
+    /// Percentages as they were last reported, plus the age of that reading.
     var planFiveHourPercent: Int?
     var planWeekPercent: Int?
     var planSampledAt: Date?
+    var planSource: PlanSource?
+
+    /// Which of the two sources the percentages came from — they differ in how fresh
+    /// they can be, and the view says so.
+    enum PlanSource: Sendable {
+        /// Claude Code's status line payload: live, and carrying the reported reset.
+        case statusLine
+        /// The desktop app's own sample, which can be days old.
+        case desktopSample
+    }
 
     /// Total tokens per session over the week — counted from whole files, so this is
     /// more complete than the tail-based figure in `Session`.
@@ -51,6 +64,9 @@ enum UsageReader {
         FileManager.default.homeDirectoryForCurrentUser
             .appending(path: "Library/Application Support/Claude/plan-usage-history.json")
     }
+
+    /// What the status line bridge last caught. See `StatusLineInstaller`.
+    static var statusLineURL: URL { StatusLineInstaller.payloadURL }
 
     /// Walks every transcript touched in the last seven days.
     ///
@@ -92,18 +108,29 @@ enum UsageReader {
             snapshot.sessionTokens[sample.session, default: 0] += sample.tokens
         }
 
-        snapshot.week = window(from: weekStart, samples: samples, cost: sessionCost, now: now)
-        snapshot.week.resets = nil      // the weekly anchor is not knowable from local files
-        snapshot.week.since = weekStart
+        // Anthropic's own two windows, when the bridge is in place. They decide where
+        // each window begins, so the tokens counted below describe exactly the window
+        // the percentage beside them is about.
+        let reported = statusLineWindows(now: now)
 
-        if let blockStart = currentBlockStart(samples.map(\.at), now: now) {
-            snapshot.fiveHour = window(from: blockStart, samples: samples, cost: sessionCost, now: now)
-            snapshot.fiveHour.since = blockStart
-            snapshot.fiveHour.resets = blockStart.addingTimeInterval(blockLength)
+        let weekFrom = reported?.sevenDay?.resets.addingTimeInterval(-weekLength) ?? weekStart
+        snapshot.week = window(from: weekFrom, samples: samples, cost: sessionCost, now: now)
+        // Without a reported reset the weekly anchor is not knowable from local files:
+        // all we have then is the rolling week behind us.
+        snapshot.week.resets = reported?.sevenDay?.resets
+        snapshot.week.resetIsEstimate = reported?.sevenDay == nil
+
+        let blockFrom = reported?.fiveHour?.resets.addingTimeInterval(-blockLength)
+            ?? currentBlockStart(samples.map(\.at), now: now)
+        if let blockFrom {
+            snapshot.fiveHour = window(from: blockFrom, samples: samples, cost: sessionCost, now: now)
+            snapshot.fiveHour.resets = reported?.fiveHour?.resets ?? blockFrom.addingTimeInterval(blockLength)
+            snapshot.fiveHour.resetIsEstimate = reported?.fiveHour == nil
         }
 
-        // A reset the API actually reported beats our estimate.
-        if let reportedReset, reportedReset.at > now {
+        // A reset the API reported to a rejected request is exact too, and it is all
+        // there is when the bridge is not installed.
+        if reported == nil, let reportedReset, reportedReset.at > now {
             if reportedReset.type == "five_hour" {
                 snapshot.fiveHour.resets = reportedReset.at
                 snapshot.fiveHour.resetIsEstimate = false
@@ -113,7 +140,14 @@ enum UsageReader {
             }
         }
 
-        applyPlanSample(&snapshot, now: now)
+        if let reported {
+            snapshot.planFiveHourPercent = reported.fiveHour?.percent
+            snapshot.planWeekPercent = reported.sevenDay?.percent
+            snapshot.planSource = .statusLine
+            snapshot.planSampledAt = reported.caughtAt
+        } else {
+            applyPlanSample(&snapshot, now: now)
+        }
         snapshot.scanDuration = Date.now.timeIntervalSince(started)
         return snapshot
     }
@@ -235,6 +269,59 @@ enum UsageReader {
 
     // MARK: - Plan percentages
 
+    /// The payload Claude Code hands its status line, as the bridge last caught it:
+    ///
+    /// ```
+    /// "rate_limits": {
+    ///   "five_hour": { "used_percentage": 23.5, "resets_at": 1738425600 },
+    ///   "seven_day": { "used_percentage": 41.2, "resets_at": 1738857600 }
+    /// }
+    /// ```
+    ///
+    /// Claude Code leaves a window out of the payload once its reset has passed, so a
+    /// window that is in there describes the one we are in — at the moment it was
+    /// written. The file itself can be old, though: nothing writes it while no session
+    /// is open. `resets_at` settles that too, because a window whose reset has passed
+    /// since is one we must not show. Whatever survives brings the reported reset time
+    /// with it, which is better than the estimate drawn from activity.
+    ///
+    /// Nothing at all when the bridge is missing, the payload is stale or both windows
+    /// have reset since — never a half-truth.
+    private static func statusLineWindows(now: Date) -> ReportedWindows? {
+        guard let data = try? Data(contentsOf: statusLineURL),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let limits = root["rate_limits"] as? [String: Any]
+        else { return nil }
+
+        func window(_ key: String) -> (percent: Int, resets: Date)? {
+            guard let object = limits[key] as? [String: Any],
+                  let percent = Fmt.double(object["used_percentage"]),
+                  let seconds = Fmt.double(object["resets_at"])
+            else { return nil }
+            let resets = Date(timeIntervalSince1970: seconds)
+            return resets > now ? (Int(percent.rounded()), resets) : nil
+        }
+
+        // The payload carries no timestamp of its own; when it was written is the age.
+        let caughtAt = (try? statusLineURL.resourceValues(forKeys: [.contentModificationDateKey]))?
+            .contentModificationDate ?? now
+        let reported = ReportedWindows(
+            fiveHour: window("five_hour"),
+            sevenDay: window("seven_day"),
+            caughtAt: caughtAt
+        )
+        return reported.isEmpty ? nil : reported
+    }
+
+    /// The two windows as Claude Code last reported them, each with the moment it resets.
+    private struct ReportedWindows {
+        var fiveHour: (percent: Int, resets: Date)?
+        var sevenDay: (percent: Int, resets: Date)?
+        var caughtAt: Date
+
+        var isEmpty: Bool { fiveHour == nil && sevenDay == nil }
+    }
+
     /// `{"version":2,"samples":[{"t":…,"org":"…","u":{"fh":11,"sd":14}}]}`
     /// `fh` = five hours, `sd` = seven days, both in percent of the plan's limit.
     ///
@@ -255,6 +342,7 @@ enum UsageReader {
         // Recorded even when nothing below survives: the age is what explains the
         // missing percentages.
         snapshot.planSampledAt = sampledAt
+        snapshot.planSource = .desktopSample
         guard let usage = latest["u"] as? [String: Any] else { return }
 
         if let blockStart = snapshot.fiveHour.since, sampledAt >= blockStart {

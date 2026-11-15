@@ -202,18 +202,21 @@ enum DemoData {
             sessions: 4,
             since: now.addingTimeInterval(-9_600),
             resets: now.addingTimeInterval(8_400),
-            resetIsEstimate: true
+            resetIsEstimate: false
         )
         snapshot.week = UsageSnapshot.Window(
             tokens: 9_830_000,
             sessions: 23,
             since: now.addingTimeInterval(-7 * 24 * 3_600),
-            resets: nil,
-            resetIsEstimate: true
+            resets: now.addingTimeInterval(2 * 24 * 3_600 + 5_700),
+            resetIsEstimate: false
         )
         snapshot.planFiveHourPercent = 37
         snapshot.planWeekPercent = 71
-        snapshot.planSampledAt = now.addingTimeInterval(-540)
+        // As the status line bridge delivers them: both windows reported, reset times
+        // included, seconds old.
+        snapshot.planSource = .statusLine
+        snapshot.planSampledAt = now.addingTimeInterval(-4)
         snapshot.scanDuration = 0.68
         return snapshot
     }

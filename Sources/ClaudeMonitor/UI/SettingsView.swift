@@ -14,6 +14,7 @@ struct SettingsView: View {
         Form {
             symbolSection
             hooksSection
+            statusLineSection
             terminalSection
 
             Section {
@@ -31,7 +32,10 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 460)
         .scenePadding()
-        .task { store.refreshHookStatus() }
+        .task {
+            store.refreshHookStatus()
+            store.refreshStatusLineStatus()
+        }
     }
 
     // MARK: - Symbol
@@ -185,15 +189,72 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Status line
+
+    private var statusLineSection: some View {
+        Section {
+            HStack(alignment: .top, spacing: 10) {
+                StatusGlyph(
+                    isComplete: store.statusLineStatus.isComplete,
+                    label: store.statusLineStatus.isComplete ? "Bridge installed" : "Bridge missing"
+                )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(store.statusLineStatus.text)
+                        .font(.system(size: 12))
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if let error = store.statusLineError {
+                        Text(error)
+                            .font(.system(size: 11))
+                            .foregroundStyle(Theme.aborted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                if store.statusLineStatus.isComplete {
+                    Button("Remove") { store.uninstallStatusLine() }
+                        .buttonStyle(.glass)
+                } else {
+                    Button("Install bridge") { store.installStatusLine() }
+                        .buttonStyle(.glassProminent)
+                }
+            }
+            .padding(.vertical, 2)
+        } header: {
+            Text("Plan percentages")
+        } footer: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("""
+                Claude Code hands its status line a JSON payload that carries both plan \
+                windows, each with the percentage used and the reset time the API reported. \
+                Nothing else here does: hooks never carry them, and the sample the desktop \
+                app leaves behind can be days old — the panel then shows tokens alone.
+                """)
+                Text("""
+                Installing writes ~/.claude/monitor/statusline.sh and points settings.json at \
+                it. A status line you already use is kept, not replaced: the bridge hands it \
+                the same input and prints its output, so the line looks as it did. \
+                settings.json is backed up first.
+                """)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
     private struct StatusGlyph: View {
         let isComplete: Bool
+        var label: String?
 
         var body: some View {
             Image(systemName: isComplete ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                 .foregroundStyle(isComplete ? Theme.working : Theme.waiting)
                 .imageScale(.medium)
                 .padding(.top, 1)
-                .accessibilityLabel(isComplete ? "Hooks installed" : "Hooks missing")
+                .accessibilityLabel(label ?? (isComplete ? "Hooks installed" : "Hooks missing"))
         }
     }
 

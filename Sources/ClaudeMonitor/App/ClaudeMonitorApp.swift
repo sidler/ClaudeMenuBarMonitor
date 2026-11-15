@@ -35,6 +35,20 @@ enum Entry {
             catch { print("Failed: \(error.localizedDescription)") }
             return
         }
+        if CommandLine.arguments.contains("--statusline") {
+            print(StatusLineInstaller.status().text)
+            return
+        }
+        if CommandLine.arguments.contains("--install-statusline") {
+            do { try StatusLineInstaller.install(); print(StatusLineInstaller.status().text) }
+            catch { print("Failed: \(error.localizedDescription)") }
+            return
+        }
+        if CommandLine.arguments.contains("--uninstall-statusline") {
+            do { try StatusLineInstaller.uninstall(); print(StatusLineInstaller.status().text) }
+            catch { print("Failed: \(error.localizedDescription)") }
+            return
+        }
         #if DEBUG
         // A login item can only be withdrawn by a bundle carrying the identifier it
         // was registered under. After the identifier changed, the old registration

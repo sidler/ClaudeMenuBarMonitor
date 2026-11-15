@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.3
+
+- The plan percentages are live again, and this time they are Anthropic's own. Claude Code
+  hands its status line a JSON payload carrying `rate_limits.five_hour` and
+  `rate_limits.seven_day` — the percentage used and the exact reset — and Settings now has
+  an **Install bridge** button that keeps a copy of that payload for the app. Hooks never
+  carry those figures, and the sample the desktop app writes can be days old.
+- A status line already in use is chained, not replaced: the bridge runs the previous
+  command with the same input and prints its output, so the line looks unchanged.
+- Both windows now begin where Anthropic says they do — `resets_at` minus five hours, and
+  minus seven days — so the tokens counted and the percentage beside them describe the same
+  window. The weekly reset is shown for the first time; it cannot be read anywhere else on
+  the machine.
+
 ## 1.0.2
 
 - Plan percentages are left out once they no longer describe the window they stand beside.

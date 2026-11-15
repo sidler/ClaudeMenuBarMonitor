@@ -83,6 +83,52 @@ The same without the UI:
 The app reads the spooled events on every scan and clears them out: exactly the newest
 event per session is kept, the rest is spent.
 
+## The status line bridge (recommended)
+
+Settings has a second button: **Install bridge**. It is what makes the plan percentages in
+the panel real numbers rather than leftovers.
+
+Claude Code hands its status line a JSON payload on stdin every time the line is drawn, and
+that payload carries what nothing else on this machine does:
+
+```json
+"rate_limits": {
+  "five_hour": { "used_percentage": 23.5, "resets_at": 1738425600 },
+  "seven_day": { "used_percentage": 41.2, "resets_at": 1738857600 }
+}
+```
+
+Both windows, with the percentage used and the exact moment each one resets — Anthropic's
+figures, as fresh as the line itself. Hooks never carry them, and the sample the desktop app
+leaves behind can be days old. The payload is documented under
+[Customize your status line](https://docs.claude.com/en/docs/claude-code/statusline); the
+object is there for Pro, Max and Ultra subscriptions, after the first API response, and a
+window disappears from it once its reset has passed.
+
+What the button does:
+
+1. writes `~/.claude/monitor/statusline.sh` — a dozen lines that keep the payload in
+   `~/.claude/monitor/statusline.json` and pass it on; no `jq`, no Python, no network,
+2. points `statusLine` in `~/.claude/settings.json` at that script.
+
+A status line you already use is kept, not replaced. The installer copies the previous
+command to `~/.claude/monitor/statusline-chain.sh`, and the bridge runs it with the same
+input and prints its output unchanged — the line looks exactly as it did, and `padding` and
+`refreshInterval` stay as you set them. Removing the bridge puts the old command back from
+`statusline-chain.json`. `settings.json.bak` is written before any change.
+
+The same without the UI:
+
+```sh
+.build/release/ClaudeMonitor --statusline            # status
+.build/release/ClaudeMonitor --install-statusline
+.build/release/ClaudeMonitor --uninstall-statusline
+```
+
+Without the bridge nothing breaks: the panel shows the token counts it counts itself, and
+falls back to the desktop app's sample for percentages while that sample is young enough to
+mean anything.
+
 ## The five states
 
 Three sources, in order of authority:
@@ -127,30 +173,37 @@ surface later.
 
 ## Usage figures
 
-The panel shows two lines above the footer: the current five-hour block and the last seven
-days. They count for the machine, not for a single session, so they appear once rather than
-in every popover — what is per-session is the context window, and that stays in the popover.
-The figures come from three sources:
+The panel shows two lines above the footer: the current five-hour block and the week. They
+count for the machine, not for a single session, so they appear once rather than in every
+popover — what is per-session is the context window, and that stays in the popover. The
+figures come from three sources:
 
-- **Plan percentages** — the real quota figures behind `/usage`. The desktop app samples
-  them into `~/Library/Application Support/Claude/plan-usage-history.json`, and it does so
-  rarely: days can pass between samples. A percentage is therefore shown only while it still
-  describes the window it stands beside — the five-hour figure only if the sample was taken
-  inside the current block, the weekly one only if the sample is less than a day old. A block
-  percentage from before the current block began describes a block that has since reset, and
-  is worse than no percentage at all. Outside those bounds the row falls back to the token
-  count and says how old the sample is.
+- **Plan percentages** — Anthropic's own, from the payload the
+  [status line bridge](#the-status-line-bridge-recommended) catches. They also decide where
+  each window begins: `resets_at` minus five hours, and minus seven days. Without the bridge
+  the app falls back to the sample the desktop app writes to
+  `~/Library/Application Support/Claude/plan-usage-history.json`, and that one is kept only
+  while it still describes the window it stands beside — the five-hour figure only if the
+  sample was taken inside the current block, the weekly one only if the sample is less than a
+  day old. A block percentage from before the current block began describes a block that has
+  since reset, and is worse than no percentage at all. Outside those bounds the row falls
+  back to the token count and says how old the sample is.
 - **Token counts** — summed from the transcripts, so always current, but they are *our*
   sum rather than Anthropic's accounting, which weighs models differently. Cache reads are
-  excluded: they dwarf everything else and say little about the quota.
-- **Reset times** — a five-hour block starts with its first request and lasts five hours,
-  so the reset is derived from activity and marked with `*`. When a request was actually
-  rejected, the transcript carries `quotaLimits.resetsAt`, and that exact value wins. The
-  weekly anchor cannot be read locally, so no weekly reset is shown.
+  excluded: they dwarf everything else and say little about the quota. They are counted
+  between the edges above, so the tokens and the percentage beside them describe the same
+  window. Without the bridge the week has no knowable anchor and falls back to the rolling
+  seven days behind now.
+- **Reset times** — reported ones win and are shown plainly; an estimate is marked with `*`.
+  A five-hour block starts with its first request and lasts five hours, so without the bridge
+  the reset is derived from activity. When a request was actually rejected, the transcript
+  carries `quotaLimits.resetsAt`, and that exact value beats the estimate too.
 
 The scan reads whole transcripts rather than their tails and therefore runs on its own
 five-minute timer — plus once at launch, and whenever the panel opens if the last one is
-more than a minute old. It searches the mapped files for byte patterns and only decodes the
+more than a minute old. The payload the bridge leaves behind is read in the same pass; it is
+not watched for changes, because a percentage that moves by one point is not worth waking
+the app for. It searches the mapped files for byte patterns and only decodes the
 lines that match — over 1.2 GB of transcripts that is the difference between 0.7 seconds
 and over a minute.
 

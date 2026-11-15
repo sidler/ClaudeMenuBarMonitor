@@ -8,17 +8,26 @@ enum UsageDump {
         print("Scan took \(String(format: "%.2f", usage.scanDuration)) s\n")
 
         line("Five-hour block", usage.fiveHour, percent: usage.planFiveHourPercent)
-        line("Last seven days", usage.week, percent: usage.planWeekPercent)
+        // With a reported reset the window is the plan's own week, which starts where
+        // the plan says -- without one it is just the seven days behind us.
+        line(usage.week.resetIsEstimate ? "Last seven days" : "Plan week",
+             usage.week, percent: usage.planWeekPercent)
 
-        if let sampledAt = usage.planSampledAt {
-            let age = Fmt.elapsed(since: sampledAt)
+        switch usage.planSource {
+        case .statusLine:
+            let age = usage.planSampledAt.map { Fmt.elapsed(since: $0) } ?? "unknown"
+            print("\nPlan percentages from Claude Code's status line, caught \(age) ago")
+        case .desktopSample:
+            let age = usage.planSampledAt.map { Fmt.elapsed(since: $0) } ?? "unknown"
             if usage.planFiveHourPercent == nil, usage.planWeekPercent == nil {
                 print("\nPlan sample is \(age) old and describes windows that have since passed — percentages left out")
             } else {
                 print("\nPlan percentages sampled \(age) ago by the desktop app")
             }
-        } else {
-            print("\nNo plan sample found at \(UsageReader.planHistoryURL.path)")
+            print("Install the status line bridge in Settings for live figures")
+        case nil:
+            print("\nNo plan figures: nothing at \(UsageReader.statusLineURL.path)")
+            print("and no usable sample at \(UsageReader.planHistoryURL.path)")
         }
     }
 

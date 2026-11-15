@@ -16,6 +16,8 @@ final class SessionStore {
 
     private(set) var hookStatus: HookInstaller.Status = .notInstalled
     private(set) var hookError: String?
+    private(set) var statusLineStatus: StatusLineInstaller.Status = .notInstalled
+    private(set) var statusLineError: String?
     private(set) var terminalError: String?
     /// Usage across all sessions. Costly to compute, so it runs on its own slow timer.
     private(set) var usage: UsageSnapshot?
@@ -176,6 +178,33 @@ final class SessionStore {
         }
         refreshHookStatus()
         scheduleRefresh(delay: .zero)
+    }
+
+    // MARK: - Status line
+
+    func refreshStatusLineStatus() {
+        statusLineStatus = StatusLineInstaller.status()
+    }
+
+    func installStatusLine() {
+        runStatusLine { try StatusLineInstaller.install() }
+    }
+
+    func uninstallStatusLine() {
+        runStatusLine { try StatusLineInstaller.uninstall() }
+    }
+
+    private func runStatusLine(_ work: () throws -> Void) {
+        do {
+            try work()
+            statusLineError = nil
+        } catch {
+            statusLineError = error.localizedDescription
+        }
+        refreshStatusLineStatus()
+        // The payload arrives with the next redraw of the line, not now -- but removing
+        // the bridge deletes it, and that should show at once.
+        refreshUsage()
     }
 
     // MARK: - Actions

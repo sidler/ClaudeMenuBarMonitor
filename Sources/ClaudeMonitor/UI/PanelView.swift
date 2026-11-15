@@ -193,19 +193,26 @@ struct PanelView: View {
                     "Week",
                     percent: usage.planWeekPercent,
                     tokens: usage.week.tokens,
-                    trailing: sampleNote(usage)
+                    // The weekly reset is only ever reported, never estimated -- when it
+                    // is there it beats a note about how old the reading is.
+                    trailing: usage.week.resets.map {
+                        "resets \(Fmt.clockOrDate($0, now: store.now))"
+                    } ?? sampleNote(usage)
                 )
             }
             .padding(.horizontal, 14)
             .padding(.top, 9)
             .padding(.bottom, 2)
-            .help("Percentages come from the plan figures the desktop app sampled, and are left out once they no longer describe the window beside them -- the tokens, counted here from the transcripts with cache reads excluded, are always current. * means the reset is estimated from activity.")
+            .help("Percentages are Anthropic's, read from what Claude Code hands its status line, and left out once they no longer describe the window beside them -- without the bridge in Settings they fall back to the desktop app's sample, which can be days old. The tokens, counted here from the transcripts with cache reads excluded, are always current. * means the reset is estimated from activity.")
         }
     }
 
     /// Either how fresh the percentage is, or -- when there is none -- why.
+    ///
+    /// Only the desktop app's sample needs saying: it is written when it is written. What
+    /// the status line reports is as current as the line itself.
     private func sampleNote(_ usage: UsageSnapshot) -> String? {
-        guard let sampledAt = usage.planSampledAt else { return nil }
+        guard usage.planSource == .desktopSample, let sampledAt = usage.planSampledAt else { return nil }
         let age = Fmt.elapsed(since: sampledAt, now: store.now)
         return usage.planWeekPercent == nil ? "plan sample \(age) old" : "sampled \(age) ago"
     }
