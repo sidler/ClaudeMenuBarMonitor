@@ -11,7 +11,12 @@ enum UsageDump {
         line("Last seven days", usage.week, percent: usage.planWeekPercent)
 
         if let sampledAt = usage.planSampledAt {
-            print("\nPlan percentages sampled \(Fmt.elapsed(since: sampledAt)) ago by the desktop app")
+            let age = Fmt.elapsed(since: sampledAt)
+            if usage.planFiveHourPercent == nil, usage.planWeekPercent == nil {
+                print("\nPlan sample is \(age) old and describes windows that have since passed — percentages left out")
+            } else {
+                print("\nPlan percentages sampled \(age) ago by the desktop app")
+            }
         } else {
             print("\nNo plan sample found at \(UsageReader.planHistoryURL.path)")
         }

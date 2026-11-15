@@ -133,8 +133,13 @@ in every popover — what is per-session is the context window, and that stays i
 The figures come from three sources:
 
 - **Plan percentages** — the real quota figures behind `/usage`. The desktop app samples
-  them into `~/Library/Application Support/Claude/plan-usage-history.json`; the app reads
-  that file and shows how old the sample is. Without a sample it falls back to token counts.
+  them into `~/Library/Application Support/Claude/plan-usage-history.json`, and it does so
+  rarely: days can pass between samples. A percentage is therefore shown only while it still
+  describes the window it stands beside — the five-hour figure only if the sample was taken
+  inside the current block, the weekly one only if the sample is less than a day old. A block
+  percentage from before the current block began describes a block that has since reset, and
+  is worse than no percentage at all. Outside those bounds the row falls back to the token
+  count and says how old the sample is.
 - **Token counts** — summed from the transcripts, so always current, but they are *our*
   sum rather than Anthropic's accounting, which weighs models differently. Cache reads are
   excluded: they dwarf everything else and say little about the quota.
@@ -144,7 +149,8 @@ The figures come from three sources:
   weekly anchor cannot be read locally, so no weekly reset is shown.
 
 The scan reads whole transcripts rather than their tails and therefore runs on its own
-five-minute timer. It searches the mapped files for byte patterns and only decodes the
+five-minute timer — plus once at launch, and whenever the panel opens if the last one is
+more than a minute old. It searches the mapped files for byte patterns and only decodes the
 lines that match — over 1.2 GB of transcripts that is the difference between 0.7 seconds
 and over a minute.
 

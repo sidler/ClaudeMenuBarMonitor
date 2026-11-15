@@ -193,14 +193,21 @@ struct PanelView: View {
                     "Week",
                     percent: usage.planWeekPercent,
                     tokens: usage.week.tokens,
-                    trailing: usage.planSampledAt.map { "sampled \(Fmt.elapsed(since: $0, now: store.now)) ago" }
+                    trailing: sampleNote(usage)
                 )
             }
             .padding(.horizontal, 14)
             .padding(.top, 9)
             .padding(.bottom, 2)
-            .help("Percentages come from the plan figures the desktop app sampled; tokens are counted locally, cache reads excluded. * means the reset is estimated from activity.")
+            .help("Percentages come from the plan figures the desktop app sampled, and are left out once they no longer describe the window beside them -- the tokens, counted here from the transcripts with cache reads excluded, are always current. * means the reset is estimated from activity.")
         }
+    }
+
+    /// Either how fresh the percentage is, or -- when there is none -- why.
+    private func sampleNote(_ usage: UsageSnapshot) -> String? {
+        guard let sampledAt = usage.planSampledAt else { return nil }
+        let age = Fmt.elapsed(since: sampledAt, now: store.now)
+        return usage.planWeekPercent == nil ? "plan sample \(age) old" : "sampled \(age) ago"
     }
 
     private func usageRow(_ label: String, percent: Int?, tokens: Int, trailing: String?) -> some View {

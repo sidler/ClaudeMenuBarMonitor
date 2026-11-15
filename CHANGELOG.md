@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.2
+
+- Plan percentages are left out once they no longer describe the window they stand beside.
+  The desktop app samples them rarely — days can pass — and a five-hour percentage taken
+  before the current block began belongs to a block that has since reset. The five-hour
+  figure now needs a sample from inside the current block, the weekly one a sample less
+  than a day old. Otherwise the row shows the locally counted tokens, which are always
+  current, and says how old the sample is.
+
 ## 1.0.1
 
 - The panel no longer draws a focus ring. SwiftUI gives the first control in a window

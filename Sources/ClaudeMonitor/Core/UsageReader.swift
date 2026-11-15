@@ -44,6 +44,8 @@ enum UsageReader {
     /// Anthropic's usage block. A block starts with the first request and lasts five hours.
     static let blockLength: TimeInterval = 5 * 3600
     static let weekLength: TimeInterval = 7 * 24 * 3600
+    /// How old a plan sample may be before the weekly percentage is dropped.
+    static let weekSampleMaxAge: TimeInterval = 24 * 3600
 
     static var planHistoryURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
@@ -111,7 +113,7 @@ enum UsageReader {
             }
         }
 
-        applyPlanSample(&snapshot)
+        applyPlanSample(&snapshot, now: now)
         snapshot.scanDuration = Date.now.timeIntervalSince(started)
         return snapshot
     }
@@ -235,16 +237,34 @@ enum UsageReader {
 
     /// `{"version":2,"samples":[{"t":…,"org":"…","u":{"fh":11,"sd":14}}]}`
     /// `fh` = five hours, `sd` = seven days, both in percent of the plan's limit.
-    private static func applyPlanSample(_ snapshot: inout UsageSnapshot) {
+    ///
+    /// The desktop app writes this file when it writes it, and days can pass in
+    /// between. A percentage is therefore kept only while it still describes the
+    /// window it will be shown beside. One taken before the current five-hour block
+    /// began belongs to a block that has since reset: putting "11 %" next to a block
+    /// that started an hour ago is worse than putting nothing there. What remains is
+    /// the token count, which is counted here and is always current.
+    private static func applyPlanSample(_ snapshot: inout UsageSnapshot, now: Date) {
         guard let data = try? Data(contentsOf: planHistoryURL),
               let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let samples = root["samples"] as? [[String: Any]],
-              let latest = samples.max(by: { (Fmt.double($0["t"]) ?? 0) < (Fmt.double($1["t"]) ?? 0) })
+              let latest = samples.max(by: { (Fmt.double($0["t"]) ?? 0) < (Fmt.double($1["t"]) ?? 0) }),
+              let sampledAt = Fmt.epochMillis(latest["t"])
         else { return }
 
-        snapshot.planSampledAt = Fmt.epochMillis(latest["t"])
+        // Recorded even when nothing below survives: the age is what explains the
+        // missing percentages.
+        snapshot.planSampledAt = sampledAt
         guard let usage = latest["u"] as? [String: Any] else { return }
-        snapshot.planFiveHourPercent = Fmt.int(usage["fh"])
-        snapshot.planWeekPercent = Fmt.int(usage["sd"])
+
+        if let blockStart = snapshot.fiveHour.since, sampledAt >= blockStart {
+            snapshot.planFiveHourPercent = Fmt.int(usage["fh"])
+        }
+        // The week is a rolling window, so an old sample is not wrong in the same way
+        // -- it describes a week that has since moved on underneath it. A day is as
+        // far as that stretches.
+        if now.timeIntervalSince(sampledAt) < weekSampleMaxAge {
+            snapshot.planWeekPercent = Fmt.int(usage["sd"])
+        }
     }
 }
