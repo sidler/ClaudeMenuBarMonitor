@@ -227,10 +227,7 @@ struct PanelView: View {
                 .frame(width: 86, alignment: .leading)
 
             if let percent {
-                ProgressView(value: min(1, Double(percent) / 100))
-                    .progressViewStyle(.linear)
-                    .tint(percent >= 80 ? Theme.waiting : Theme.working)
-                    .frame(width: 70)
+                meter(percent)
                 Text("\(percent) %")
                     .font(.system(size: 11))
                     .monospacedDigit()
@@ -254,6 +251,23 @@ struct PanelView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(label): \(percent.map { "\($0) percent of plan" } ?? "\(Fmt.tokens(tokens)) tokens")")
+    }
+
+    /// Drawn here rather than with `ProgressView`: AppKit rounds both ends of the linear
+    /// style, and on a short bar that cap swallows the whole fill -- 3 % and 10 % came out
+    /// as the same small blob.
+    private func meter(_ percent: Int) -> some View {
+        let width: CGFloat = 70
+        let fraction = min(1, max(0, Double(percent) / 100))
+        return ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(.quaternary)
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(percent >= 80 ? Theme.waiting : Theme.working)
+                // A percent that works out thinner than a hairline still has to show.
+                .frame(width: max(fraction * width, percent > 0 ? 1.5 : 0))
+        }
+        .frame(width: width, height: 5)
     }
 
     private var footer: some View {

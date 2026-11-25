@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4
+
+- The usage bars are proportional again. `ProgressView`'s linear style rounds both ends of
+  its fill, and on a bar 70 points wide that cap is wider than everything below about a
+  tenth: 3 % and 10 % were drawn as the same small blob. The panel now draws the bar
+  itself, so the fill is exactly as long as the percentage says.
+
 ## 1.0.3
 
 - The plan percentages are live again, and this time they are Anthropic's own. Claude Code
